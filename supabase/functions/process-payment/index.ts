@@ -67,13 +67,14 @@ serve(async (req) => {
           billTo: {
             firstName: customerInfo.firstName,
             lastName: customerInfo.lastName,
-            email: customerInfo.email,
-            phoneNumber: customerInfo.phone || '',
             address: customerInfo.address,
             city: customerInfo.city,
             state: customerInfo.state,
             zip: customerInfo.zipCode,
             country: customerInfo.country,
+          },
+          customer: {
+            email: customerInfo.email,
           },
         },
       },

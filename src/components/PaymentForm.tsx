@@ -28,6 +28,10 @@ interface PaymentToken {
     dataDescriptor: string;
     dataValue: string;
   };
+  messages?: {
+    resultCode: string;
+    message: { code: string; text: string }[];
+  };
 }
 
 interface PaymentFormProps {
@@ -179,7 +183,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           });
         } else {
           // Successfully received payment token
-          setPaymentToken({ opaqueData: response.opaqueData });
+          setPaymentToken({ opaqueData: response.opaqueData, messages: response.messages });
           toast({
             title: "Payment Token Generated",
             description: "Payment token created successfully. Review before processing.",
@@ -501,8 +505,31 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
             <CardContent className="space-y-6">
               {showTokenDetails && (
                 <div className="space-y-4">
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <Label>Result Code</Label>
+                      <Input
+                        value={paymentToken.messages?.resultCode || ''}
+                        readOnly
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Message Code</Label>
+                      <Input
+                        value={(paymentToken.messages?.message?.map((m: any) => m.code).join(', ')) || ''}
+                        readOnly
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Message</Label>
+                      <Input
+                        value={(paymentToken.messages?.message?.map((m: any) => m.text).join(' | ')) || ''}
+                        readOnly
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    <Label>Data Descriptor</Label>
+                    <Label>Data Type (Data Descriptor)</Label>
                     <Textarea
                       value={paymentToken.opaqueData.dataDescriptor}
                       readOnly
@@ -510,7 +537,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Data Value (Token)</Label>
+                    <Label>Payment Nonce (Data Value)</Label>
                     <Textarea
                       value={paymentToken.opaqueData.dataValue}
                       readOnly
