@@ -53,15 +53,40 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [acceptJsLoaded, setAcceptJsLoaded] = useState(false);
 
-  // Load Authorize.Net AcceptJS
+  // Load Authorize.Net AcceptJS - clean up previous script first
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://jstest.authorize.net/v1/Accept.js'; // Test environment
-    script.onload = () => setAcceptJsLoaded(true);
-    document.head.appendChild(script);
+    const loadAcceptJS = () => {
+      // Clean up any existing script
+      const existingScript = document.querySelector('script[src*="authorize.net"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://jstest.authorize.net/v1/Accept.js'; // Test environment
+      script.onload = () => {
+        console.log('Accept.js loaded, window.Accept available:', !!window.Accept);
+        setAcceptJsLoaded(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Accept.js');
+        toast({
+          title: "Error",
+          description: "Failed to load Accept.js library",
+          variant: "destructive"
+        });
+      };
+      document.head.appendChild(script);
+    };
+
+    loadAcceptJS();
 
     return () => {
-      document.head.removeChild(script);
+      // Cleanup on unmount
+      const script = document.querySelector('script[src*="authorize.net"]');
+      if (script) {
+        script.remove();
+      }
     };
   }, []);
 
@@ -72,7 +97,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!acceptJsLoaded) {
+    if (!acceptJsLoaded || !window.Accept) {
       toast({
         title: "Error",
         description: "Payment system not loaded. Please try again.",
@@ -86,8 +111,8 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     const formData = new FormData(form);
     
     const authData = {
-      clientKey: "YOUR_CLIENT_KEY", // This should be your public client key from Authorize.Net
-      apiLoginID: "YOUR_API_LOGIN_ID" // This will be handled by backend
+      clientKey: "5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6", // Test client key
+      apiLoginID: "5KP3u95bQpv" // Test API login ID
     };
 
     const cardData = {
@@ -97,28 +122,40 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       cardCode: formData.get('cvv') as string
     };
 
+    console.log('Calling Accept.dispatchData with:', { authData, cardData });
+
     // Use AcceptJS to create payment token
-    (window as any).Accept.dispatchData(authData, cardData, (response: any) => {
-      if (response.messages.resultCode === "Error") {
-        let errorMsg = '';
-        for (let i = 0; i < response.messages.message.length; i++) {
-          errorMsg += response.messages.message[i].code + ": " + response.messages.message[i].text;
+    try {
+      (window as any).Accept.dispatchData(authData, cardData, (response: any) => {
+        console.log('Accept.js response:', response);
+        if (response.messages.resultCode === "Error") {
+          let errorMsg = '';
+          for (let i = 0; i < response.messages.message.length; i++) {
+            errorMsg += response.messages.message[i].code + ": " + response.messages.message[i].text;
+          }
+          toast({
+            title: "Payment Error",
+            description: errorMsg,
+            variant: "destructive"
+          });
+        } else {
+          // Successfully received payment token
+          setPaymentToken(response.opaqueData);
+          toast({
+            title: "Payment Token Generated",
+            description: "Payment token created successfully. Review before processing.",
+            variant: "default"
+          });
         }
-        toast({
-          title: "Payment Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
-      } else {
-        // Successfully received payment token
-        setPaymentToken(response.opaqueData);
-        toast({
-          title: "Payment Token Generated",
-          description: "Payment token created successfully. Review before processing.",
-          variant: "default"
-        });
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Accept.dispatchData error:', error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to process payment information",
+        variant: "destructive"
+      });
+    }
   };
 
   const processPayment = async () => {

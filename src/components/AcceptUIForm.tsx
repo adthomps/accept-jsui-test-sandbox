@@ -53,25 +53,30 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
 
   useEffect(() => {
     const loadAcceptJS = () => {
-      if (window.Accept) {
-        setIsAcceptLoaded(true);
-        return;
+      // Clean up any existing script
+      const existingScript = document.querySelector('script[src*="authorize.net"]');
+      if (existingScript) {
+        existingScript.remove();
       }
 
       const script = document.createElement('script');
-      script.src = 'https://jstest.authorize.net/v1/Accept.js';
+      script.src = 'https://jstest.authorize.net/v3/AcceptUI.js';
       script.charset = 'utf-8';
       script.onload = () => {
-        setIsAcceptLoaded(true);
-        toast({
-          title: "Accept.js Loaded",
-          description: "Ready to render hosted form elements",
-        });
+        // Give it a moment to initialize
+        setTimeout(() => {
+          setIsAcceptLoaded(true);
+          console.log('AcceptUI loaded, window.Accept:', window.Accept);
+          toast({
+            title: "AcceptUI Loaded",
+            description: "Ready to render hosted form elements",
+          });
+        }, 100);
       };
       script.onerror = () => {
         toast({
           title: "Error",
-          description: "Failed to load Accept.js library",
+          description: "Failed to load AcceptUI library",
           variant: "destructive",
         });
       };
@@ -93,6 +98,12 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     if (!isAcceptLoaded || hostedFieldsRendered) return;
 
     try {
+      console.log('Attempting to render hosted fields, Accept object:', window.Accept);
+      
+      if (!window.Accept || typeof window.Accept.render !== 'function') {
+        throw new Error('Accept.render method not available');
+      }
+
       // Test credentials for sandbox
       const authData = {
         clientKey: "5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6",
@@ -106,15 +117,32 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           expirationDate: "expirationDate", 
           cardCode: "cardCode"
         },
+        acceptUIFormBtnTxt: "Submit",
+        acceptUIFormHeaderTxt: "Card Information",
+        paymentOptions: {
+          showCreditCard: true,
+          showBankAccount: false
+        },
         style: {
           base: {
             color: '#000',
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif'
+            fontSize: '15px',
+            fontFamily: 'helvetica, tahoma, calibri, sans-serif',
+            fontSmoothing: 'antialiased',
+            focus: {
+              color: '#424770',
+            },
+            '::placeholder': {
+              color: '#9BACC8',
+            },
+          },
+          invalid: {
+            color: '#9e2146',
           }
         }
       };
 
+      console.log('Rendering with options:', hostedFieldOptions);
       window.Accept.render(hostedFieldOptions, "acceptUIContainer");
       setHostedFieldsRendered(true);
       
@@ -125,8 +153,8 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     } catch (error) {
       console.error('Error rendering hosted fields:', error);
       toast({
-        title: "Error",
-        description: "Failed to render hosted form elements",
+        title: "Error", 
+        description: `Failed to render hosted form elements: ${error.message}`,
         variant: "destructive",
       });
     }
