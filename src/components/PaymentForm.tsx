@@ -214,7 +214,13 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     setIsProcessing(true);
     
     try {
-      // Call the Supabase edge function to process the payment
+      console.log('Invoking process-payment with:', {
+        descriptor: paymentToken.opaqueData.dataDescriptor,
+        nonceLength: paymentToken.opaqueData.dataValue?.length || 0,
+        amount: customerInfo.amount,
+        zip: customerInfo.zip,
+      });
+
       const { data, error } = await supabase.functions.invoke('process-payment', {
         body: {
           opaqueData: paymentToken.opaqueData,
@@ -234,6 +240,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       });
 
       if (error) {
+        console.error('Edge Function error:', error, (error as any)?.context);
         throw new Error(error.message);
       }
 
@@ -258,11 +265,12 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           amount: ''
         });
       } else {
+        console.error('Gateway returned failure:', data);
         throw new Error(data.error || 'Payment processing failed');
       }
       
     } catch (error: any) {
-      console.error('Payment processing error:', error);
+      console.error('Payment processing error (caught):', error);
       toast({
         title: "Payment Processing Error",
         description: error.message || "There was an error processing your payment. Please try again.",

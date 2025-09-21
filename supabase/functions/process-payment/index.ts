@@ -40,10 +40,23 @@ serve(async (req) => {
   try {
     const { opaqueData, customerInfo }: PaymentData = await req.json();
 
+    const requestId = crypto.randomUUID();
+    const tokenInfo = {
+      descriptor: opaqueData?.dataDescriptor,
+      valueLength: opaqueData?.dataValue?.length || 0,
+    };
+    console.log(`[${requestId}] Incoming payment`, JSON.stringify({
+      amount: customerInfo?.amount,
+      zip: customerInfo?.zipCode,
+      descriptor: tokenInfo.descriptor,
+      nonceLen: tokenInfo.valueLength,
+    }, null, 2));
+
     const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
     const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
 
     if (!apiLoginId || !transactionKey) {
+      console.error(`[${requestId}] Missing Authorize.Net credentials`);
       throw new Error('Authorize.Net credentials not configured');
     }
 
@@ -80,18 +93,30 @@ serve(async (req) => {
       },
     };
 
-    // Send request to Authorize.Net
-    const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
+    // Send request to Authorize.Net (Sandbox)
+    const endpoint = 'https://apitest.authorize.net/xml/v1/request.api';
+    console.log(`[${requestId}] Sending to Authorize.Net`, JSON.stringify({
+      endpoint,
+      amount: customerInfo.amount,
+      zip: customerInfo.zipCode,
+      descriptor: opaqueData.dataDescriptor,
+    }, null, 2));
+
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(transactionRequest),
     });
 
-    const result = await response.json();
+    const text = await response.text();
+    let result: any;
+    try {
+      result = JSON.parse(text);
+    } catch (_err) {
+      result = { parseError: true, raw: text };
+    }
 
-    console.log('Authorize.Net Response:', JSON.stringify(result, null, 2));
+    console.log(`[${requestId}] Authorize.Net status ${response.status}`, JSON.stringify(result, null, 2));
 
     if (result.createTransactionResponse?.messages?.resultCode === 'Ok') {
       const transaction = result.createTransactionResponse.transactionResponse;
@@ -103,17 +128,30 @@ serve(async (req) => {
         responseCode: transaction.responseCode,
         messageCode: transaction.messages?.[0]?.code,
         description: transaction.messages?.[0]?.description,
+        requestId,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      const errorMessage = result.createTransactionResponse?.transactionResponse?.errors?.[0]?.errorText || 
-                          result.createTransactionResponse?.messages?.message?.[0]?.text ||
-                          'Transaction failed';
-      
+      const tx = result.createTransactionResponse?.transactionResponse || {};
+      const msg = result.createTransactionResponse?.messages?.message?.[0] || {};
+      const errorMessage = tx.errors?.[0]?.errorText || msg.text || 'Transaction failed';
+      const errorCode = tx.errors?.[0]?.errorCode || msg.code || undefined;
+
       return new Response(JSON.stringify({
         success: false,
         error: errorMessage,
+        errorCode,
+        resultCode: result.createTransactionResponse?.messages?.resultCode,
+        gateway: {
+          responseCode: tx.responseCode,
+          avsResultCode: tx.avsResultCode,
+          cvvResultCode: tx.cvvResultCode,
+          transId: tx.transId,
+          errors: tx.errors,
+          messages: result.createTransactionResponse?.messages?.message,
+        },
+        requestId,
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
