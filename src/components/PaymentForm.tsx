@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerInfo {
   firstName: string;
@@ -85,8 +86,8 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     const formData = new FormData(form);
     
     const authData = {
-      clientKey: "YOUR_CLIENT_KEY", // Replace with actual client key
-      apiLoginID: "YOUR_API_LOGIN_ID" // Replace with actual API login ID
+      clientKey: "YOUR_CLIENT_KEY", // This should be your public client key from Authorize.Net
+      apiLoginID: "YOUR_API_LOGIN_ID" // This will be handled by backend
     };
 
     const cardData = {
@@ -133,34 +134,58 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     setIsProcessing(true);
     
     try {
-      // Here you would call your backend API to process the payment
-      // This is just a simulation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Payment Processed Successfully",
-        description: "Your payment has been processed successfully.",
-        variant: "default"
+      // Call the Supabase edge function to process the payment
+      const { data, error } = await supabase.functions.invoke('process-payment', {
+        body: {
+          opaqueData: paymentToken.opaqueData,
+          customerInfo: {
+            firstName: customerInfo.firstName,
+            lastName: customerInfo.lastName,
+            email: customerInfo.email,
+            phone: customerInfo.phone,
+            address: customerInfo.address,
+            city: customerInfo.city,
+            state: customerInfo.state,
+            zipCode: customerInfo.zip,
+            country: 'US', // Default to US, could be made configurable
+            amount: parseFloat(customerInfo.amount)
+          }
+        }
       });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.success) {
+        toast({
+          title: "Payment Processed Successfully",
+          description: `Transaction ID: ${data.transactionId}. Your payment has been processed successfully.`,
+          variant: "default"
+        });
+        
+        // Reset form
+        setPaymentToken(null);
+        setCustomerInfo({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          zip: '',
+          amount: ''
+        });
+      } else {
+        throw new Error(data.error || 'Payment processing failed');
+      }
       
-      // Reset form
-      setPaymentToken(null);
-      setCustomerInfo({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zip: '',
-        amount: ''
-      });
-      
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Payment processing error:', error);
       toast({
         title: "Payment Processing Error",
-        description: "There was an error processing your payment. Please try again.",
+        description: error.message || "There was an error processing your payment. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -173,6 +198,14 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="absolute top-6 left-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
           <div className="flex items-center justify-center gap-2">
             <Shield className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">

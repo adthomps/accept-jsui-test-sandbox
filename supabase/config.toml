@@ -1,1 +1,10 @@
 project_id = "pzzzcxspasbswpxzdqku"
+
+[functions.process-payment]
+verify_jwt = false
+
+[functions.accept-hosted-token]
+verify_jwt = false
+
+[functions.authorize-webhook]
+verify_jwt = false
