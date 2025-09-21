@@ -424,19 +424,22 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                 </div>
 
                 {authConfig && isAcceptLoaded ? (
-                  <button
-                    type="button"
-                    className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
-                    data-billingAddressOptions='{"show":true, "required":false}'
-                    data-apiLoginID={authConfig.apiLoginId}
-                    data-clientKey={authConfig.clientKey}
-                    data-acceptUIFormBtnTxt="Complete Payment"
-                    data-acceptUIFormHeaderTxt="Payment Information"
-                    data-paymentOptions='{"showCreditCard": true, "showBankAccount": false}'
-                    data-responseHandler="acceptUIResponseHandler"
-                  >
-                    Open AcceptUI v3 Lightbox Payment
-                  </button>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: `<button
+                        type="button"
+                        class="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
+                        data-billingAddressOptions='{"show":true, "required":false}'
+                        data-apiLoginID="${authConfig.apiLoginId}"
+                        data-clientKey="${authConfig.clientKey}"
+                        data-acceptUIFormBtnTxt="Complete Payment"
+                        data-acceptUIFormHeaderTxt="Payment Information"
+                        data-paymentOptions='{"showCreditCard": true, "showBankAccount": false}'
+                        data-responseHandler="acceptUIResponseHandler">
+                        Open AcceptUI v3 Lightbox Payment
+                      </button>`
+                    }}
+                  />
                 ) : (
                   <Alert>
                     <AlertDescription>
