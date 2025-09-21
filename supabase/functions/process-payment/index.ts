@@ -118,11 +118,11 @@ serve(async (req) => {
     const processingEndTime = Date.now();
     const processingDuration = processingEndTime - processingStartTime;
 
-    if (result.createTransactionResponse?.messages?.resultCode === 'Ok') {
-      const transaction = result.createTransactionResponse.transactionResponse;
+    if (result.messages?.resultCode === 'Ok' && result.transactionResponse) {
+      const transaction = result.transactionResponse;
       
       console.log(`[${requestId}] Gateway success`, {
-        resultCode: result.createTransactionResponse.messages.resultCode,
+        resultCode: result.messages.resultCode,
         transactionId: transaction.transId,
         responseCode: transaction.responseCode
       });
@@ -146,7 +146,7 @@ serve(async (req) => {
           timestamp: new Date().toISOString()
         },
         rawResponse: {
-          messages: result.createTransactionResponse.messages,
+          messages: result.messages,
           transactionResponse: {
             ...transaction,
             transHash: '[REDACTED]',
@@ -157,28 +157,24 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
       });
     } else {
-      const tx = result.createTransactionResponse?.transactionResponse || {};
-      const createMsgs = result.createTransactionResponse?.messages?.message || [];
-      const topMsgs = result.messages?.message || [];
+      const tx = result.transactionResponse || {};
+      const msgs = result.messages?.message || [];
       const pickMsg = (arr: any[]) => (Array.isArray(arr) && arr.length > 0 ? arr[0] : {});
       const txErr = Array.isArray(tx.errors) && tx.errors.length > 0 ? tx.errors[0] : undefined;
-      const msgCreate = pickMsg(createMsgs);
-      const msgTop = pickMsg(topMsgs);
+      const msg = pickMsg(msgs);
 
       const errorMessage =
         txErr?.errorText ||
-        msgCreate?.text ||
-        msgTop?.text ||
+        msg?.text ||
         'Transaction failed';
 
       const errorCode =
         txErr?.errorCode ||
-        msgCreate?.code ||
-        msgTop?.code;
+        msg?.code;
 
       console.log(`[${requestId}] Gateway failure`, {
         resultCodeTop: result.messages?.resultCode,
-        resultCodeCreate: result.createTransactionResponse?.messages?.resultCode,
+        resultCodeCreate: result.messages?.resultCode,
         errorCode,
         errorMessage,
         txResponseCode: tx.responseCode,
@@ -190,7 +186,7 @@ serve(async (req) => {
         success: false,
         error: errorMessage,
         errorCode,
-        resultCode: result.createTransactionResponse?.messages?.resultCode || result.messages?.resultCode,
+        resultCode: result.messages?.resultCode,
         responseCode: tx.responseCode,
         avsResultCode: tx.avsResultCode,
         cvvResultCode: tx.cvvResultCode,
@@ -200,7 +196,7 @@ serve(async (req) => {
           cvvResultCode: tx.cvvResultCode,
           transId: tx.transId,
           errors: tx.errors || [],
-          messages: createMsgs.length ? createMsgs : topMsgs,
+          messages: msgs,
         },
         requestId,
         processing: {
@@ -211,7 +207,7 @@ serve(async (req) => {
         },
         rawResponse: {
           messages: result.messages,
-          createTransactionResponse: result.createTransactionResponse
+          transactionResponse: result.transactionResponse
         }
       }), {
         status: 200,
