@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import PaymentResponseDisplay from './PaymentResponseDisplay';
 
 interface CustomerInfo {
   firstName: string;
@@ -58,6 +59,11 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const [isAcceptJSLoaded, setIsAcceptJSLoaded] = useState(false);
   const [acceptJSError, setAcceptJSError] = useState<string | null>(null);
   const [authConfig, setAuthConfig] = useState<any>(null);
+  
+  // Enhanced response handling
+  const [paymentResponse, setPaymentResponse] = useState<any>(null);
+  const [showResponseDetails, setShowResponseDetails] = useState(true);
+  const [responseType, setResponseType] = useState<'success' | 'failure' | null>(null);
 
   // Load auth config and AcceptJS library
   useEffect(() => {
@@ -245,13 +251,18 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       }
 
       if (data.success) {
+        // Store detailed success response
+        setPaymentResponse(data);
+        setResponseType('success');
+        setShowResponseDetails(true);
+        
         toast({
           title: "Payment Processed Successfully",
-          description: `Transaction ID: ${data.transactionId}. Your payment has been processed successfully.`,
+          description: `Transaction ID: ${data.transactionId}`,
           variant: "default"
         });
         
-        // Reset form
+        // Reset form after successful payment
         setPaymentToken(null);
         setCustomerInfo({
           firstName: '',
@@ -265,10 +276,15 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           amount: ''
         });
       } else {
+        // Store detailed failure response
         console.error('Gateway returned failure:', data);
+        setPaymentResponse(data);
+        setResponseType('failure');
+        setShowResponseDetails(true);
+        
         toast({
           title: "Payment Failed",
-          description: `${data.error}${data.errorCode ? ` (${data.errorCode})` : ''}${data.resultCode ? ` - ${data.resultCode}` : ''}${data.gateway?.responseCode ? ` [resp ${data.gateway.responseCode}]` : ''}${data.requestId ? ` [req ${data.requestId}]` : ''}`,
+          description: data.error || "Payment could not be processed",
           variant: "destructive"
         });
         return;
@@ -276,6 +292,24 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       
     } catch (error: any) {
       console.error('Payment processing error (caught):', error);
+      
+      // Store error response
+      const errorResponse = {
+        success: false,
+        error: error.message || "There was an error processing your payment. Please try again.",
+        requestId: `error_${Date.now()}`,
+        processing: {
+          startTime: Date.now(),
+          endTime: Date.now(),
+          duration: 0,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      setPaymentResponse(errorResponse);
+      setResponseType('failure');
+      setShowResponseDetails(true);
+      
       toast({
         title: "Payment Processing Error",
         description: error.message || "There was an error processing your payment. Please try again.",
@@ -578,6 +612,18 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Payment Response Display */}
+        {paymentResponse && showResponseDetails && (
+          <PaymentResponseDisplay 
+            response={paymentResponse}
+            onDismiss={() => {
+              setPaymentResponse(null);
+              setShowResponseDetails(false);
+              setResponseType(null);
+            }}
+          />
         )}
       </div>
     </div>

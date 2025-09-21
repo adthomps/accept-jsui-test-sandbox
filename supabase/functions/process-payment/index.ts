@@ -40,17 +40,15 @@ serve(async (req) => {
   try {
     const { opaqueData, customerInfo }: PaymentData = await req.json();
 
-    const requestId = crypto.randomUUID();
-    const tokenInfo = {
-      descriptor: opaqueData?.dataDescriptor,
-      valueLength: opaqueData?.dataValue?.length || 0,
-    };
-    console.log(`[${requestId}] Incoming payment`, JSON.stringify({
-      amount: customerInfo?.amount,
-      zip: customerInfo?.zipCode,
-      descriptor: tokenInfo.descriptor,
-      nonceLen: tokenInfo.valueLength,
-    }, null, 2));
+    const requestId = `req_${Date.now()}`;
+    const processingStartTime = Date.now();
+
+    console.log(`[${requestId}] Incoming payment`, {
+      amount: customerInfo.amount,
+      zip: customerInfo.zipCode,
+      descriptor: opaqueData.dataDescriptor,
+      nonceLen: opaqueData.dataValue?.length || 0
+    });
 
     const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
     const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
@@ -94,12 +92,12 @@ serve(async (req) => {
 
     // Send request to Authorize.Net (Sandbox)
     const endpoint = 'https://apitest.authorize.net/xml/v1/request.api';
-    console.log(`[${requestId}] Sending to Authorize.Net`, JSON.stringify({
+    console.log(`[${requestId}] Sending to Authorize.Net`, {
       endpoint,
       amount: customerInfo.amount,
       zip: customerInfo.zipCode,
-      descriptor: opaqueData.dataDescriptor,
-    }, null, 2));
+      descriptor: opaqueData.dataDescriptor
+    });
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -115,10 +113,19 @@ serve(async (req) => {
       result = { parseError: true, raw: text };
     }
 
-    console.log(`[${requestId}] Authorize.Net status ${response.status}`, JSON.stringify(result, null, 2));
+    console.log(`[${requestId}] Authorize.Net status ${response.status}`, result);
+
+    const processingEndTime = Date.now();
+    const processingDuration = processingEndTime - processingStartTime;
 
     if (result.createTransactionResponse?.messages?.resultCode === 'Ok') {
       const transaction = result.createTransactionResponse.transactionResponse;
+      
+      console.log(`[${requestId}] Gateway success`, {
+        resultCode: result.createTransactionResponse.messages.resultCode,
+        transactionId: transaction.transId,
+        responseCode: transaction.responseCode
+      });
       
       return new Response(JSON.stringify({
         success: true,
@@ -127,9 +134,25 @@ serve(async (req) => {
         responseCode: transaction.responseCode,
         messageCode: transaction.messages?.[0]?.code,
         description: transaction.messages?.[0]?.description,
-        httpStatus: response.status,
+        avsResultCode: transaction.avsResultCode,
+        cvvResultCode: transaction.cvvResultCode,
+        accountNumber: transaction.accountNumber,
+        accountType: transaction.accountType,
         requestId,
-        refId,
+        processing: {
+          startTime: processingStartTime,
+          endTime: processingEndTime,
+          duration: processingDuration,
+          timestamp: new Date().toISOString()
+        },
+        rawResponse: {
+          messages: result.createTransactionResponse.messages,
+          transactionResponse: {
+            ...transaction,
+            transHash: '[REDACTED]',
+            transHashSha2: '[REDACTED]'
+          }
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
       });
@@ -153,7 +176,7 @@ serve(async (req) => {
         msgCreate?.code ||
         msgTop?.code;
 
-      console.log(`[${requestId}] Gateway failure`, JSON.stringify({
+      console.log(`[${requestId}] Gateway failure`, {
         resultCodeTop: result.messages?.resultCode,
         resultCodeCreate: result.createTransactionResponse?.messages?.resultCode,
         errorCode,
@@ -161,23 +184,35 @@ serve(async (req) => {
         txResponseCode: tx.responseCode,
         avs: tx.avsResultCode,
         cvv: tx.cvvResultCode,
-      }, null, 2));
+      });
 
       return new Response(JSON.stringify({
         success: false,
         error: errorMessage,
         errorCode,
         resultCode: result.createTransactionResponse?.messages?.resultCode || result.messages?.resultCode,
+        responseCode: tx.responseCode,
+        avsResultCode: tx.avsResultCode,
+        cvvResultCode: tx.cvvResultCode,
         gateway: {
           responseCode: tx.responseCode,
           avsResultCode: tx.avsResultCode,
           cvvResultCode: tx.cvvResultCode,
           transId: tx.transId,
-          errors: tx.errors,
+          errors: tx.errors || [],
           messages: createMsgs.length ? createMsgs : topMsgs,
         },
         requestId,
-        refId,
+        processing: {
+          startTime: processingStartTime,
+          endTime: processingEndTime,
+          duration: processingDuration,
+          timestamp: new Date().toISOString()
+        },
+        rawResponse: {
+          messages: result.messages,
+          createTransactionResponse: result.createTransactionResponse
+        }
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
