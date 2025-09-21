@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
 
@@ -32,11 +32,11 @@ interface CustomerInfo {
   description: string;
 }
 
-interface AcceptUIFormProps {
+interface AcceptUIFormV2Props {
   onBack: () => void;
 }
 
-const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
+const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: 'John',
@@ -49,8 +49,9 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     zip: '98004',
     amount: '29.99',
     invoice: 'INV-' + Date.now(),
-    description: 'AcceptUI v3 Test Transaction'
+    description: 'AcceptUI v2 Test Transaction'
   });
+
   const [isAcceptLoaded, setIsAcceptLoaded] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [authConfig, setAuthConfig] = useState<any>(null);
@@ -61,7 +62,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   const [showResponseDetails, setShowResponseDetails] = useState(true);
 
   useEffect(() => {
-    const loadAuthConfigAndAcceptUI = async () => {
+    const loadAuthConfigAndAcceptJS = async () => {
       try {
         // Get auth configuration
         const configResponse = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/get-auth-config');
@@ -74,43 +75,43 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
         setAuthConfig(config);
 
         // Remove existing script
-        const existingScript = document.querySelector('script[src*="AcceptUI.js"]');
+        const existingScript = document.querySelector('script[src*="Accept.js"]');
         if (existingScript) {
           existingScript.remove();
         }
 
-        // Load AcceptUI v3
+        // Load Accept.js v2 for AcceptUI v2
         const script = document.createElement('script');
-        script.src = 'https://jstest.authorize.net/v3/AcceptUI.js';
+        script.src = `${config.environment.jsUrl}/v1/Accept.js`;
         script.charset = 'utf-8';
         
         script.onload = () => {
-          console.log('AcceptUI v3 loaded, window.Accept:', window.Accept);
+          console.log('AcceptUI v2 (Accept.js) loaded successfully');
           setIsAcceptLoaded(true);
           setAcceptError(null);
           toast({
-            title: "AcceptUI v3 Ready",
-            description: "v3/AcceptUI.js library loaded successfully",
+            title: "AcceptUI v2 Ready",
+            description: "Enhanced AcceptJS tokenization loaded successfully",
           });
         };
         
         script.onerror = (error) => {
-          console.error('Failed to load AcceptUI v3:', error);
-          setAcceptError('Failed to load AcceptUI v3 library');
+          console.error('Failed to load AcceptUI v2:', error);
+          setAcceptError('Failed to load AcceptUI v2 library');
           setIsAcceptLoaded(false);
         };
 
         document.head.appendChild(script);
       } catch (error) {
-        console.error('Error loading AcceptUI v3:', error);
-        setAcceptError('Failed to initialize AcceptUI v3 system');
+        console.error('Error loading AcceptUI v2:', error);
+        setAcceptError('Failed to initialize AcceptUI v2 system');
       }
     };
 
-    loadAuthConfigAndAcceptUI();
+    loadAuthConfigAndAcceptJS();
 
     return () => {
-      const script = document.querySelector('script[src*="AcceptUI.js"]');
+      const script = document.querySelector('script[src*="Accept.js"]');
       if (script) {
         script.remove();
       }
@@ -126,14 +127,13 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     }));
   };
 
-  // AcceptUI v3 - Try to use dispatchData method like other Accept.js versions
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isAcceptLoaded || !window.Accept) {
       toast({
         title: "Error",
-        description: "AcceptUI v3 system not loaded. Please try again.",
+        description: "AcceptUI v2 system not loaded. Please try again.",
         variant: "destructive"
       });
       return;
@@ -142,7 +142,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     if (!authConfig) {
       toast({
         title: "Error",
-        description: "AcceptUI v3 system not properly configured.",
+        description: "AcceptUI v2 system not properly configured.",
         variant: "destructive"
       });
       return;
@@ -163,42 +163,33 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
       cardCode: formData.get('cvv') as string
     };
 
-    console.log('AcceptUI v3 - Attempting to use dispatchData method:', { authData, cardData });
+    console.log('AcceptUI v2 - Calling Accept.dispatchData with:', { authData, cardData });
 
     try {
       const secureData = { authData, cardData };
 
-      if (typeof window.Accept.dispatchData === 'function') {
-        window.Accept.dispatchData(secureData, (response: any) => {
-          console.log('AcceptUI v3 dispatchData response:', response);
-          if (response.messages.resultCode === "Error") {
-            const errors = response.messages.message.map((msg: any) => `${msg.code}: ${msg.text}`).join(', ');
-            toast({
-              title: "AcceptUI v3 Token Error",
-              description: errors,
-              variant: "destructive",
-            });
-          } else {
-            setPaymentToken({ opaqueData: response.opaqueData, messages: response.messages });
-            toast({
-              title: "AcceptUI v3 Token Generated",
-              description: "Payment token created using v3 AcceptUI library",
-            });
-          }
-        });
-      } else {
-        console.error('AcceptUI v3 - dispatchData method not available, available methods:', Object.keys(window.Accept));
-        toast({
-          title: "AcceptUI v3 API Issue",
-          description: "dispatchData method not available in v3 AcceptUI library. API may be different.",
-          variant: "destructive",
-        });
-      }
+      window.Accept.dispatchData(secureData, (response: any) => {
+        console.log('AcceptUI v2 response:', response);
+        if (response.messages.resultCode === "Error") {
+          const errors = response.messages.message.map((msg: any) => `${msg.code}: ${msg.text}`).join(', ');
+          toast({
+            title: "AcceptUI v2 Token Error",
+            description: errors,
+            variant: "destructive",
+          });
+        } else {
+          setPaymentToken({ opaqueData: response.opaqueData, messages: response.messages });
+          toast({
+            title: "AcceptUI v2 Token Generated",
+            description: "Enhanced payment token created successfully",
+          });
+        }
+      });
     } catch (error) {
-      console.error('AcceptUI v3 error:', error);
+      console.error('AcceptUI v2 dispatchData error:', error);
       toast({
-        title: "AcceptUI v3 Error",
-        description: "Failed to process payment with v3 AcceptUI library",
+        title: "AcceptUI v2 Error",
+        description: "Failed to process payment information",
         variant: "destructive"
       });
     }
@@ -217,7 +208,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     setIsProcessing(true);
     
     try {
-      console.log('AcceptUI v3 - Processing payment with token');
+      console.log('AcceptUI v2 - Processing payment with token');
 
       const { data, error } = await supabase.functions.invoke('process-payment', {
         body: {
@@ -246,7 +237,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
         setShowResponseDetails(true);
         
         toast({
-          title: "AcceptUI v3 Payment Success",
+          title: "AcceptUI v2 Payment Success",
           description: `Transaction ID: ${data.transactionId}`,
         });
         
@@ -263,26 +254,26 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           zip: '98004',
           amount: '29.99',
           invoice: 'INV-' + Date.now(),
-          description: 'AcceptUI v3 Test Transaction'
+          description: 'AcceptUI v2 Test Transaction'
         });
       } else {
         setPaymentResponse(data);
         setShowResponseDetails(true);
         
         toast({
-          title: "AcceptUI v3 Payment Failed",
+          title: "AcceptUI v2 Payment Failed",
           description: data.error || "Payment could not be processed",
           variant: "destructive"
         });
       }
       
     } catch (error: any) {
-      console.error('AcceptUI v3 payment processing error:', error);
+      console.error('AcceptUI v2 payment processing error:', error);
       
       const errorResponse = {
         success: false,
         error: error.message || "There was an error processing your payment. Please try again.",
-        requestId: `acceptui_v3_error_${Date.now()}`,
+        requestId: `acceptui_v2_error_${Date.now()}`,
         processing: {
           startTime: Date.now(),
           endTime: Date.now(),
@@ -295,7 +286,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
       setShowResponseDetails(true);
       
       toast({
-        title: "AcceptUI v3 Processing Error",
+        title: "AcceptUI v2 Processing Error",
         description: error.message || "There was an error processing your payment.",
         variant: "destructive"
       });
@@ -313,16 +304,16 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AcceptUI v3 Testing
+              AcceptUI v2 Testing
             </h1>
             <p className="text-muted-foreground">
-              Testing v3/AcceptUI.js library with fallback to dispatchData method
+              Enhanced AcceptJS implementation with improved UX and styling
             </p>
           </div>
           <div className="ml-auto">
             <Badge variant="secondary" className="gap-2">
               <Shield className="h-4 w-4" />
-              v3/AcceptUI.js
+              v2/Accept.js
             </Badge>
           </div>
         </div>
@@ -336,7 +327,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                 Customer Information
               </CardTitle>
               <CardDescription>
-                Customer details for AcceptUI v3 transaction processing
+                Customer details for AcceptUI v2 transaction processing
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -433,10 +424,10 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                AcceptUI v3 Payment Form
+                AcceptUI v2 Payment Form
               </CardTitle>
               <CardDescription>
-                Testing v3/AcceptUI.js implementation with dispatchData fallback
+                Enhanced secure payment processing with improved styling
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -487,13 +478,13 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                   className="w-full shadow-button bg-gradient-primary"
                   disabled={!isAcceptLoaded}
                 >
-                  Generate AcceptUI v3 Token
+                  Generate AcceptUI v2 Token
                 </Button>
                 
                 {!isAcceptLoaded && (
                   <Alert>
                     <AlertDescription>
-                      {acceptError || 'Loading AcceptUI v3 library...'}
+                      {acceptError || 'Loading AcceptUI v2 library...'}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -509,7 +500,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Eye className="h-5 w-5 text-accent" />
-                  AcceptUI v3 Payment Token
+                  AcceptUI v2 Payment Token
                 </span>
                 <Button
                   variant="outline"
@@ -521,7 +512,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                 </Button>
               </CardTitle>
               <CardDescription>
-                Payment token generated using v3 AcceptUI library
+                Enhanced token display with detailed information
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -559,7 +550,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
               <Alert>
                 <Shield className="h-4 w-4" />
                 <AlertDescription>
-                  AcceptUI v3 payment token generated successfully.
+                  AcceptUI v2 payment token generated successfully with enhanced security features.
                 </AlertDescription>
               </Alert>
 
@@ -569,7 +560,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                 className="w-full shadow-button bg-gradient-primary"
                 size="lg"
               >
-                {isProcessing ? 'Processing AcceptUI v3 Payment...' : 'Process AcceptUI v3 Payment'}
+                {isProcessing ? 'Processing AcceptUI v2 Payment...' : 'Process AcceptUI v2 Payment'}
               </Button>
             </CardContent>
           </Card>
@@ -586,32 +577,31 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           />
         )}
 
-        {/* AcceptUI v3 Information */}
+        {/* AcceptUI v2 Information */}
         <Card className="border-muted shadow-card">
           <CardHeader>
-            <CardTitle>AcceptUI v3 Research & Testing</CardTitle>
+            <CardTitle>AcceptUI v2 Features</CardTitle>
             <CardDescription>
-              Experimental implementation using v3/AcceptUI.js library
+              Enhanced AcceptJS implementation with improved user experience
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-medium mb-2">v3 Implementation Notes:</h4>
+                <h4 className="font-medium mb-2">Enhanced Features:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Uses jstest.authorize.net/v3/AcceptUI.js library</li>
-                  <li>• Fallback to dispatchData if available</li>
-                  <li>• Enhanced response processing with PaymentResponseDisplay</li>
                   <li>• Dynamic authentication configuration</li>
-                  <li>• Experimental API testing approach</li>
-                  <li>• May require different API methods than documented</li>
+                  <li>• Enhanced response processing with PaymentResponseDisplay</li>
+                  <li>• Improved error handling and user feedback</li>
+                  <li>• Modern gradient styling and animations</li>
+                  <li>• Detailed token information display</li>
+                  <li>• Processing timestamps and request tracking</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium mb-2">Test Information:</h4>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  <div>Library: jstest.authorize.net/v3/AcceptUI.js</div>
-                  <div>Method: window.Accept.dispatchData (if available)</div>
+                  <div>Uses: {authConfig?.environment?.jsUrl}/v1/Accept.js</div>
                   <div>Test Cards: 4111111111111111 (Visa)</div>
                   <div>Expiry: Any future date</div>
                   <div>CVV: Any 3-4 digits</div>
@@ -625,4 +615,4 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   );
 };
 
-export default AcceptUIForm;
+export default AcceptUIFormV2;

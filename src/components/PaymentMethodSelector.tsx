@@ -7,6 +7,7 @@ import { Shield, Code, Globe, ArrowRight, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
+import AcceptUIFormV2 from './AcceptUIFormV2';
 import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
@@ -17,7 +18,11 @@ const PaymentMethodSelector = () => {
     return <PaymentForm onBack={() => setSelectedMethod(null)} />;
   }
 
-  if (selectedMethod === 'acceptui') {
+  if (selectedMethod === 'acceptui-v2') {
+    return <AcceptUIFormV2 onBack={() => setSelectedMethod(null)} />;
+  }
+
+  if (selectedMethod === 'acceptui-v3') {
     return <AcceptUIForm onBack={() => setSelectedMethod(null)} />;
   }
 
@@ -58,10 +63,11 @@ const PaymentMethodSelector = () => {
 
         {/* Method Comparison */}
         <Tabs defaultValue="comparison" className="w-full max-w-6xl">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="comparison">Compare Methods</TabsTrigger>
             <TabsTrigger value="acceptjs">AcceptJS Details</TabsTrigger>
-            <TabsTrigger value="acceptui">Accept UI Details</TabsTrigger>
+            <TabsTrigger value="acceptui-v2">AcceptUI v2 Details</TabsTrigger>
+            <TabsTrigger value="acceptui-v3">AcceptUI v3 Details</TabsTrigger>
             <TabsTrigger value="accepthosted">Accept Hosted Details</TabsTrigger>
             <TabsTrigger value="sim">SIM (Legacy) Details</TabsTrigger>
           </TabsList>
@@ -110,39 +116,79 @@ const PaymentMethodSelector = () => {
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    Accept UI
-                    <Badge variant="outline">Hosted Forms</Badge>
+                    Accept UI v2
+                    <Badge variant="outline">Enhanced AcceptJS</Badge>
                   </CardTitle>
                   <CardDescription>
-                    AcceptJS hosted form elements within custom forms
+                    Enhanced AcceptJS using v2/Accept.js with improved UX
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Hosted form components</li>
-                      <li>• AcceptJS tokenization</li>
-                      <li>• Custom styling options</li>
-                      <li>• Reduced PCI scope</li>
+                      <li>• Enhanced AcceptJS tokenization</li>
+                      <li>• Improved response processing</li>
+                      <li>• Modern styling and animations</li>
+                      <li>• Dynamic auth configuration</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Minimal PCI compliance</li>
-                      <li>• Embedded payment forms</li>
-                      <li>• Hosted field security</li>
+                      <li>• Improved AcceptJS experience</li>
+                      <li>• Enhanced error handling</li>
+                      <li>• Better response feedback</li>
                     </ul>
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => setSelectedMethod('acceptui')}
+                    onClick={() => setSelectedMethod('acceptui-v2')}
                     className="w-full"
                     variant="outline"
                   >
-                    Test Accept UI
+                    Test AcceptUI v2
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Accept UI v3
+                    <Badge variant="outline">Experimental</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Testing v3/AcceptUI.js library with API research
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Key Features:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• v3/AcceptUI.js library testing</li>
+                      <li>• API method discovery</li>
+                      <li>• Experimental implementation</li>
+                      <li>• Enhanced response processing</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Best For:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• API research and testing</li>
+                      <li>• v3 library exploration</li>
+                      <li>• Method compatibility testing</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    onClick={() => setSelectedMethod('acceptui-v3')}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    Test AcceptUI v3
                   </Button>
                 </CardFooter>
               </Card>
