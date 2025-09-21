@@ -1,7 +1,7 @@
-import PaymentForm from '@/components/PaymentForm';
+import PaymentMethodSelector from '@/components/PaymentMethodSelector';
 
 const Index = () => {
-  return <PaymentForm />;
+  return <PaymentMethodSelector />;
 };
 
 export default Index;
