@@ -47,7 +47,7 @@ const SIMForm = ({ onBack }: SIMFormProps) => {
     setCustomerInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const generateAcceptUIUrl = () => {
+  const generateAcceptUIUrl = async () => {
     if (!customerInfo.amount || parseFloat(customerInfo.amount) <= 0) {
       toast({
         title: "Error",
@@ -57,68 +57,70 @@ const SIMForm = ({ onBack }: SIMFormProps) => {
       return;
     }
 
-    // AcceptUI parameters for hosted payment form
-    const acceptUIParams = {
-      // Replace these with your actual Authorize.Net credentials
-      apiLoginId: 'YOUR_API_LOGIN_ID',
-      transactionKey: 'YOUR_TRANSACTION_KEY',
-      
-      // Transaction details
-      amount: customerInfo.amount,
-      invoiceNumber: customerInfo.invoiceNumber || `INV-${Date.now()}`,
-      description: customerInfo.description || 'Payment Transaction',
-      
-      // Customer information
-      firstName: customerInfo.firstName,
-      lastName: customerInfo.lastName,
-      email: customerInfo.email,
-      phone: customerInfo.phone,
-      address: customerInfo.address,
-      city: customerInfo.city,
-      state: customerInfo.state,
-      zip: customerInfo.zip,
-      
-      // AcceptUI specific parameters
-      acceptUIFormBtnTxt: 'Pay Now',
-      acceptUIFormHeaderTxt: 'Secure Payment',
-      showReceipt: 'true',
-      relayResponseURL: window.location.origin + '/payment-response', // Your response handler
-      
-      // Test environment
-      testMode: 'true'
-    };
+    try {
+      // Call the edge function to generate SIM form data
+      const response = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/generate-sim-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerInfo: {
+            firstName: customerInfo.firstName,
+            lastName: customerInfo.lastName,
+            email: customerInfo.email,
+            phone: customerInfo.phone,
+            address: customerInfo.address,
+            city: customerInfo.city,
+            state: customerInfo.state,
+            zipCode: customerInfo.zip,
+            country: 'US',
+            amount: parseFloat(customerInfo.amount),
+            invoiceNumber: customerInfo.invoiceNumber || `INV-${Date.now()}`,
+            description: customerInfo.description || 'Payment Transaction'
+          }
+        })
+      });
 
-    // Create form data for POST to AcceptUI
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://test.authorize.net/gateway/transact.dll'; // Test URL
-    form.target = '_blank';
+      const result = await response.json();
 
-    // Add all parameters as hidden inputs
-    Object.entries(acceptUIParams).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value.toString();
-      form.appendChild(input);
-    });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate form data');
+      }
 
-    // Add required AcceptUI type parameter
-    const typeInput = document.createElement('input');
-    typeInput.type = 'hidden';
-    typeInput.name = 'type';
-    typeInput.value = 'AUTH_CAPTURE';
-    form.appendChild(typeInput);
+      // Create form data for POST to AcceptUI
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = result.actionUrl;
+      form.target = '_blank';
 
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+      // Add all parameters as hidden inputs
+      Object.entries(result.formData).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value.toString();
+        form.appendChild(input);
+      });
 
-    toast({
-      title: "Redirecting to AcceptUI",
-      description: "Opening Authorize.Net hosted payment form in a new tab.",
-      variant: "default"
-    });
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      toast({
+        title: "Redirecting to AcceptUI",
+        description: "Opening Authorize.Net hosted payment form in a new tab.",
+        variant: "default"
+      });
+
+    } catch (error) {
+      console.error('Error generating SIM form:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate payment form.",
+        variant: "destructive"
+      });
+    }
   };
 
   const openAcceptUIHosted = () => {
@@ -403,7 +405,7 @@ const SIMForm = ({ onBack }: SIMFormProps) => {
             <Alert>
               <Shield className="h-4 w-4" />
               <AlertDescription>
-                <strong>Setup Required:</strong> Replace YOUR_API_LOGIN_ID and YOUR_TRANSACTION_KEY with your actual Authorize.Net sandbox credentials. For production, change the form action URL to https://secure2.authorize.net/gateway/transact.dll
+                <strong>Secure Integration:</strong> Credentials are securely stored in Supabase and accessed via edge functions. Currently configured for sandbox testing. For production, update environment configuration in the backend.
               </AlertDescription>
             </Alert>
           </CardContent>

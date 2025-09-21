@@ -51,42 +51,64 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const [paymentToken, setPaymentToken] = useState<PaymentToken | null>(null);
   const [showTokenDetails, setShowTokenDetails] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [acceptJsLoaded, setAcceptJsLoaded] = useState(false);
+  const [isAcceptJSLoaded, setIsAcceptJSLoaded] = useState(false);
+  const [acceptJSError, setAcceptJSError] = useState<string | null>(null);
+  const [authConfig, setAuthConfig] = useState<any>(null);
 
-  // Load Authorize.Net AcceptJS - clean up previous script first
+  // Load auth config and AcceptJS library
   useEffect(() => {
-    const loadAcceptJS = () => {
-      // Clean up any existing script
-      const existingScript = document.querySelector('script[src*="authorize.net"]');
-      if (existingScript) {
-        existingScript.remove();
-      }
+    const loadAuthConfigAndAcceptJS = async () => {
+      try {
+        // First, get the auth configuration
+        const configResponse = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/get-auth-config');
+        const config = await configResponse.json();
+        
+        if (!config.success) {
+          throw new Error(config.error || 'Failed to load authentication configuration');
+        }
+        
+        setAuthConfig(config);
 
-      const script = document.createElement('script');
-      script.src = 'https://jstest.authorize.net/v1/Accept.js'; // Test environment
-      script.onload = () => {
-        console.log('Accept.js loaded, window.Accept available:', !!window.Accept);
-        setAcceptJsLoaded(true);
-      };
-      script.onerror = () => {
-        console.error('Failed to load Accept.js');
-        toast({
-          title: "Error",
-          description: "Failed to load Accept.js library",
-          variant: "destructive"
-        });
-      };
-      document.head.appendChild(script);
+        // Remove any existing AcceptJS script
+        const existingScript = document.querySelector('script[src*="Accept.js"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+
+        // Load AcceptJS
+        const script = document.createElement('script');
+        script.src = `${config.environment.jsUrl}/v1/Accept.js`;
+        script.charset = 'utf-8';
+        
+        script.onload = () => {
+          console.log('AcceptJS loaded successfully');
+          setIsAcceptJSLoaded(true);
+          setAcceptJSError(null);
+        };
+        
+        script.onerror = (error) => {
+          console.error('Failed to load AcceptJS:', error);
+          setAcceptJSError('Failed to load payment library');
+          setIsAcceptJSLoaded(false);
+        };
+
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error loading auth config and AcceptJS:', error);
+        setAcceptJSError('Failed to initialize payment system');
+      }
     };
 
-    loadAcceptJS();
+    loadAuthConfigAndAcceptJS();
 
+    // Cleanup function
     return () => {
-      // Cleanup on unmount
-      const script = document.querySelector('script[src*="authorize.net"]');
+      const script = document.querySelector('script[src*="Accept.js"]');
       if (script) {
         script.remove();
       }
+      setIsAcceptJSLoaded(false);
+      setAcceptJSError(null);
     };
   }, []);
 
@@ -97,10 +119,19 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!acceptJsLoaded || !window.Accept) {
+    if (!isAcceptJSLoaded || !window.Accept) {
       toast({
         title: "Error",
         description: "Payment system not loaded. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!authConfig) {
+      toast({
+        title: "Error",
+        description: "Payment system not properly configured.",
         variant: "destructive"
       });
       return;
@@ -111,8 +142,8 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     const formData = new FormData(form);
     
     const authData = {
-      clientKey: "5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6", // Test client key
-      apiLoginID: "5KP3u95bQpv" // Test API login ID
+      clientKey: authConfig.clientKey,
+      apiLoginID: authConfig.apiLoginId
     };
 
     const cardData = {
@@ -428,15 +459,15 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
                 <Button 
                   type="submit" 
                   className="w-full shadow-button"
-                  disabled={!acceptJsLoaded}
+                  disabled={!isAcceptJSLoaded}
                 >
                   Generate Payment Token
                 </Button>
                 
-                {!acceptJsLoaded && (
+                {!isAcceptJSLoaded && (
                   <Alert>
                     <AlertDescription>
-                      Loading Authorize.Net AcceptJS library...
+                      {acceptJSError || 'Loading Authorize.Net AcceptJS library...'}
                     </AlertDescription>
                   </Alert>
                 )}

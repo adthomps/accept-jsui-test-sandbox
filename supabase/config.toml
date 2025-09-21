@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.authorize-webhook]
 verify_jwt = false
+
+[functions.get-auth-config]
+verify_jwt = false
+
+[functions.generate-sim-form]
+verify_jwt = false
