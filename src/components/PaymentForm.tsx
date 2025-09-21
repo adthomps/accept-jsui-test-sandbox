@@ -126,7 +126,15 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
 
     // Use AcceptJS to create payment token
     try {
-      (window as any).Accept.dispatchData(authData, cardData, (response: any) => {
+      const secureData = {
+        authData,
+        cardData: {
+          ...cardData,
+          cardNumber: (cardData.cardNumber || '').replace(/\s+/g, ''),
+        },
+      };
+
+      (window as any).Accept.dispatchData(secureData, (response: any) => {
         console.log('Accept.js response:', response);
         if (response.messages.resultCode === "Error") {
           let errorMsg = '';
@@ -140,7 +148,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           });
         } else {
           // Successfully received payment token
-          setPaymentToken(response.opaqueData);
+          setPaymentToken({ opaqueData: response.opaqueData });
           toast({
             title: "Payment Token Generated",
             description: "Payment token created successfully. Review before processing.",
