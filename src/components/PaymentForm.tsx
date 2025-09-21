@@ -266,7 +266,13 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
         });
       } else {
         console.error('Gateway returned failure:', data);
-        throw new Error(data.error || 'Payment processing failed');
+        toast({
+          title: "Payment Failed",
+          description: `${data.error}${data.errorCode ? ` (${data.errorCode})` : ''}${data.resultCode ? ` - ${data.resultCode}` : ''}${data.requestId ? ` [req ${data.requestId}]` : ''}`,
+          variant: "destructive"
+        });
+        // Do not throw to avoid masking detailed info from toast
+        return;
       }
       
     } catch (error: any) {

@@ -128,9 +128,10 @@ serve(async (req) => {
         responseCode: transaction.responseCode,
         messageCode: transaction.messages?.[0]?.code,
         description: transaction.messages?.[0]?.description,
+        httpStatus: response.status,
         requestId,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
       });
     } else {
       const tx = result.createTransactionResponse?.transactionResponse || {};
@@ -153,8 +154,8 @@ serve(async (req) => {
         },
         requestId,
       }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
       });
     }
 
