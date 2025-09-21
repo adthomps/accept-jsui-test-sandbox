@@ -61,13 +61,14 @@ serve(async (req) => {
     }
 
     // Create transaction request
+    const refId = `ref_${Date.now()}`;
     const transactionRequest = {
       createTransactionRequest: {
         merchantAuthentication: {
           name: apiLoginId,
           transactionKey: transactionKey,
         },
-        refId: `ref_${Date.now()}`,
+        refId,
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: customerInfo.amount.toString(),
@@ -130,29 +131,55 @@ serve(async (req) => {
         description: transaction.messages?.[0]?.description,
         httpStatus: response.status,
         requestId,
+        refId,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },
       });
     } else {
       const tx = result.createTransactionResponse?.transactionResponse || {};
-      const msg = result.createTransactionResponse?.messages?.message?.[0] || {};
-      const errorMessage = tx.errors?.[0]?.errorText || msg.text || 'Transaction failed';
-      const errorCode = tx.errors?.[0]?.errorCode || msg.code || undefined;
+      const createMsgs = result.createTransactionResponse?.messages?.message || [];
+      const topMsgs = result.messages?.message || [];
+      const pickMsg = (arr: any[]) => (Array.isArray(arr) && arr.length > 0 ? arr[0] : {});
+      const txErr = Array.isArray(tx.errors) && tx.errors.length > 0 ? tx.errors[0] : undefined;
+      const msgCreate = pickMsg(createMsgs);
+      const msgTop = pickMsg(topMsgs);
+
+      const errorMessage =
+        txErr?.errorText ||
+        msgCreate?.text ||
+        msgTop?.text ||
+        'Transaction failed';
+
+      const errorCode =
+        txErr?.errorCode ||
+        msgCreate?.code ||
+        msgTop?.code;
+
+      console.log(`[${requestId}] Gateway failure`, JSON.stringify({
+        resultCodeTop: result.messages?.resultCode,
+        resultCodeCreate: result.createTransactionResponse?.messages?.resultCode,
+        errorCode,
+        errorMessage,
+        txResponseCode: tx.responseCode,
+        avs: tx.avsResultCode,
+        cvv: tx.cvvResultCode,
+      }, null, 2));
 
       return new Response(JSON.stringify({
         success: false,
         error: errorMessage,
         errorCode,
-        resultCode: result.createTransactionResponse?.messages?.resultCode,
+        resultCode: result.createTransactionResponse?.messages?.resultCode || result.messages?.resultCode,
         gateway: {
           responseCode: tx.responseCode,
           avsResultCode: tx.avsResultCode,
           cvvResultCode: tx.cvvResultCode,
           transId: tx.transId,
           errors: tx.errors,
-          messages: result.createTransactionResponse?.messages?.message,
+          messages: createMsgs.length ? createMsgs : topMsgs,
         },
         requestId,
+        refId,
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Request-Id': requestId },

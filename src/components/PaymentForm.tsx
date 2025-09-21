@@ -268,10 +268,9 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
         console.error('Gateway returned failure:', data);
         toast({
           title: "Payment Failed",
-          description: `${data.error}${data.errorCode ? ` (${data.errorCode})` : ''}${data.resultCode ? ` - ${data.resultCode}` : ''}${data.requestId ? ` [req ${data.requestId}]` : ''}`,
+          description: `${data.error}${data.errorCode ? ` (${data.errorCode})` : ''}${data.resultCode ? ` - ${data.resultCode}` : ''}${data.gateway?.responseCode ? ` [resp ${data.gateway.responseCode}]` : ''}${data.requestId ? ` [req ${data.requestId}]` : ''}`,
           variant: "destructive"
         });
-        // Do not throw to avoid masking detailed info from toast
         return;
       }
       
