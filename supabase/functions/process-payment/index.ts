@@ -86,8 +86,6 @@ serve(async (req) => {
             state: customerInfo.state,
             zip: customerInfo.zipCode,
             country: customerInfo.country,
-          },
-          customer: {
             email: customerInfo.email,
           },
         },
