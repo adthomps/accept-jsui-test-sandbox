@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,6 +59,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentResponse, setPaymentResponse] = useState<any>(null);
   const [showResponseDetails, setShowResponseDetails] = useState(true);
+  const buttonContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadAuthConfigAndAcceptUI = async () => {
@@ -88,6 +89,12 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           console.log('AcceptUI v3 loaded, window.Accept:', window.Accept);
           setIsAcceptLoaded(true);
           setAcceptError(null);
+          
+          // Create AcceptUI button after script loads and config is available
+          if (config && buttonContainerRef.current) {
+            createAcceptUIButton(config);
+          }
+          
           toast({
             title: "AcceptUI v3 Ready",
             description: "v3/AcceptUI.js library loaded successfully",
@@ -118,6 +125,38 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
       setAcceptError(null);
     };
   }, [toast]);
+
+  // Create AcceptUI button dynamically after library loads
+  const createAcceptUIButton = (config: any) => {
+    if (!buttonContainerRef.current || !config) return;
+    
+    // Clear existing button
+    buttonContainerRef.current.innerHTML = '';
+    
+    // Create button element
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity';
+    button.textContent = 'Open AcceptUI v3 Lightbox Payment';
+    
+    // Set AcceptUI data attributes
+    button.setAttribute('data-billingAddressOptions', '{"show":true, "required":false}');
+    button.setAttribute('data-apiLoginID', config.apiLoginId);
+    button.setAttribute('data-clientKey', config.clientKey);
+    button.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
+    button.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
+    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
+    button.setAttribute('data-responseHandler', 'acceptUIResponseHandler');
+    
+    buttonContainerRef.current.appendChild(button);
+  };
+
+  // Update button when config changes and AcceptUI is loaded
+  useEffect(() => {
+    if (authConfig && isAcceptLoaded && buttonContainerRef.current) {
+      createAcceptUIButton(authConfig);
+    }
+  }, [authConfig, isAcceptLoaded]);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo(prev => ({
@@ -423,30 +462,15 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                   </div>
                 </div>
 
-                {authConfig && isAcceptLoaded ? (
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: `<button
-                        type="button"
-                        class="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
-                        data-billingAddressOptions='{"show":true, "required":false}'
-                        data-apiLoginID="${authConfig.apiLoginId}"
-                        data-clientKey="${authConfig.clientKey}"
-                        data-acceptUIFormBtnTxt="Complete Payment"
-                        data-acceptUIFormHeaderTxt="Payment Information"
-                        data-paymentOptions='{"showCreditCard": true, "showBankAccount": false}'
-                        data-responseHandler="acceptUIResponseHandler">
-                        Open AcceptUI v3 Lightbox Payment
-                      </button>`
-                    }}
-                  />
-                ) : (
-                  <Alert>
-                    <AlertDescription>
-                      {acceptError || 'Loading AcceptUI v3 configuration...'}
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <div ref={buttonContainerRef} className="w-full">
+                  {!authConfig || !isAcceptLoaded ? (
+                    <Alert>
+                      <AlertDescription>
+                        {acceptError || 'Loading AcceptUI v3 configuration...'}
+                      </AlertDescription>
+                    </Alert>
+                  ) : null}
+                </div>
               </form>
             </CardContent>
           </Card>
