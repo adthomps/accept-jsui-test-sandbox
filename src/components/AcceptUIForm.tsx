@@ -126,83 +126,49 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     }));
   };
 
-  // AcceptUI v3 - Try to use dispatchData method like other Accept.js versions
-  const handlePaymentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isAcceptLoaded || !window.Accept) {
-      toast({
-        title: "Error",
-        description: "AcceptUI v3 system not loaded. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!authConfig) {
-      toast({
-        title: "Error",
-        description: "AcceptUI v3 system not properly configured.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const authData = {
-      clientKey: authConfig.clientKey,
-      apiLoginID: authConfig.apiLoginId
-    };
-
-    const cardData = {
-      cardNumber: (formData.get('cardNumber') as string || '').replace(/\s+/g, ''),
-      month: formData.get('expMonth') as string,
-      year: formData.get('expYear') as string,
-      cardCode: formData.get('cvv') as string
-    };
-
-    console.log('AcceptUI v3 - Attempting to use dispatchData method:', { authData, cardData });
-
-    try {
-      const secureData = { authData, cardData };
-
-      if (typeof window.Accept.dispatchData === 'function') {
-        window.Accept.dispatchData(secureData, (response: any) => {
-          console.log('AcceptUI v3 dispatchData response:', response);
-          if (response.messages.resultCode === "Error") {
-            const errors = response.messages.message.map((msg: any) => `${msg.code}: ${msg.text}`).join(', ');
-            toast({
-              title: "AcceptUI v3 Token Error",
-              description: errors,
-              variant: "destructive",
-            });
-          } else {
-            setPaymentToken({ opaqueData: response.opaqueData, messages: response.messages });
-            toast({
-              title: "AcceptUI v3 Token Generated",
-              description: "Payment token created using v3 AcceptUI library",
-            });
-          }
+  // AcceptUI v3 Response Handler - Global function for AcceptUI lightbox
+  useEffect(() => {
+    // Define global response handler for AcceptUI v3
+    (window as any).acceptUIResponseHandler = (response: any) => {
+      console.log('AcceptUI v3 lightbox response:', response);
+      
+      if (response.messages && response.messages.resultCode === "Error") {
+        const errors = response.messages.message.map((msg: any) => `${msg.code}: ${msg.text}`).join(', ');
+        toast({
+          title: "AcceptUI v3 Payment Error",
+          description: errors,
+          variant: "destructive",
+        });
+      } else if (response.opaqueData) {
+        // Set hidden form values
+        const dataValueInput = document.getElementById('dataValue') as HTMLInputElement;
+        const dataDescriptorInput = document.getElementById('dataDescriptor') as HTMLInputElement;
+        
+        if (dataValueInput && dataDescriptorInput) {
+          dataValueInput.value = response.opaqueData.dataValue;
+          dataDescriptorInput.value = response.opaqueData.dataDescriptor;
+        }
+        
+        setPaymentToken({ opaqueData: response.opaqueData, messages: response.messages });
+        toast({
+          title: "AcceptUI v3 Payment Ready",
+          description: "Payment information captured securely via lightbox",
         });
       } else {
-        console.error('AcceptUI v3 - dispatchData method not available, available methods:', Object.keys(window.Accept));
+        console.error('AcceptUI v3 - Unexpected response format:', response);
         toast({
-          title: "AcceptUI v3 API Issue",
-          description: "dispatchData method not available in v3 AcceptUI library. API may be different.",
+          title: "AcceptUI v3 Response Error",
+          description: "Unexpected response format from AcceptUI v3 lightbox",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error('AcceptUI v3 error:', error);
-      toast({
-        title: "AcceptUI v3 Error",
-        description: "Failed to process payment with v3 AcceptUI library",
-        variant: "destructive"
-      });
-    }
-  };
+    };
+
+    // Cleanup
+    return () => {
+      delete (window as any).acceptUIResponseHandler;
+    };
+  }, [toast]);
 
   const processPayment = async () => {
     if (!paymentToken) {
@@ -428,72 +394,53 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
             </CardContent>
           </Card>
 
-          {/* Payment Information */}
+          {/* AcceptUI v3 Lightbox Payment */}
           <Card className="shadow-card bg-gradient-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                AcceptUI v3 Payment Form
+                AcceptUI v3 Lightbox Payment
               </CardTitle>
               <CardDescription>
-                Testing v3/AcceptUI.js implementation with dispatchData fallback
+                Click button to open AcceptUI v3 lightbox for secure payment entry
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    name="cardNumber"
-                    placeholder="4111 1111 1111 1111"
-                    maxLength={19}
-                    className="font-mono"
-                  />
-                </div>
+            <CardContent className="space-y-4">
+              <form id="acceptUIPaymentForm" className="space-y-4">
+                <input type="hidden" name="dataValue" id="dataValue" />
+                <input type="hidden" name="dataDescriptor" id="dataDescriptor" />
                 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="expMonth">Month</Label>
-                    <Input
-                      id="expMonth"
-                      name="expMonth"
-                      placeholder="12"
-                      maxLength={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="expYear">Year</Label>
-                    <Input
-                      id="expYear"
-                      name="expYear"
-                      placeholder="2025"
-                      maxLength={4}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input
-                      id="cvv"
-                      name="cvv"
-                      placeholder="123"
-                      maxLength={4}
-                    />
+                <div className="p-4 border border-muted rounded-lg bg-muted/10">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Payment Amount</h4>
+                      <p className="text-2xl font-bold text-primary">${customerInfo.amount}</p>
+                    </div>
+                    <Badge variant="outline" className="gap-2">
+                      <Shield className="h-4 w-4" />
+                      Secure Lightbox
+                    </Badge>
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full shadow-button bg-gradient-primary"
-                  disabled={!isAcceptLoaded}
-                >
-                  Generate AcceptUI v3 Token
-                </Button>
-                
-                {!isAcceptLoaded && (
+                {authConfig && isAcceptLoaded ? (
+                  <button
+                    type="button"
+                    className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
+                    data-billingAddressOptions='{"show":true, "required":false}'
+                    data-apiLoginID={authConfig.apiLoginId}
+                    data-clientKey={authConfig.clientKey}
+                    data-acceptUIFormBtnTxt="Complete Payment"
+                    data-acceptUIFormHeaderTxt="Payment Information"
+                    data-paymentOptions='{"showCreditCard": true, "showBankAccount": false}'
+                    data-responseHandler="acceptUIResponseHandler"
+                  >
+                    Open AcceptUI v3 Lightbox Payment
+                  </button>
+                ) : (
                   <Alert>
                     <AlertDescription>
-                      {acceptError || 'Loading AcceptUI v3 library...'}
+                      {acceptError || 'Loading AcceptUI v3 configuration...'}
                     </AlertDescription>
                   </Alert>
                 )}
