@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, CreditCard, User, MapPin, ExternalLink, Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft } from 'lucide-react';
+
+declare global {
+  interface Window {
+    Accept: {
+      render: (options: any, target: string) => void;
+      dispatchData: (paymentForm: any, responseHandler: any) => void;
+    };
+  }
+}
 
 interface CustomerInfo {
   firstName: string;
@@ -19,165 +25,183 @@ interface CustomerInfo {
   state: string;
   zip: string;
   amount: string;
-  invoiceNumber: string;
+  invoice: string;
   description: string;
 }
 
-const AcceptUIForm = () => {
+interface AcceptUIFormProps {
+  onBack: () => void;
+}
+
+const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
-    amount: '',
-    invoiceNumber: '',
-    description: ''
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    phone: '555-123-4567',
+    address: '123 Main Street',
+    city: 'Bellevue',
+    state: 'WA',
+    zip: '98004',
+    amount: '29.99',
+    invoice: 'INV-' + Date.now(),
+    description: 'Test transaction for Accept UI'
   });
+  const [isAcceptLoaded, setIsAcceptLoaded] = useState(false);
+  const [hostedFieldsRendered, setHostedFieldsRendered] = useState(false);
+
+  useEffect(() => {
+    const loadAcceptJS = () => {
+      if (window.Accept) {
+        setIsAcceptLoaded(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://jstest.authorize.net/v1/Accept.js';
+      script.charset = 'utf-8';
+      script.onload = () => {
+        setIsAcceptLoaded(true);
+        toast({
+          title: "Accept.js Loaded",
+          description: "Ready to render hosted form elements",
+        });
+      };
+      script.onerror = () => {
+        toast({
+          title: "Error",
+          description: "Failed to load Accept.js library",
+          variant: "destructive",
+        });
+      };
+
+      document.head.appendChild(script);
+    };
+
+    loadAcceptJS();
+  }, [toast]);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
-    setCustomerInfo(prev => ({ ...prev, [field]: value }));
+    setCustomerInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const generateAcceptUIUrl = () => {
-    if (!customerInfo.amount || parseFloat(customerInfo.amount) <= 0) {
+  const renderHostedFields = () => {
+    if (!isAcceptLoaded || hostedFieldsRendered) return;
+
+    try {
+      // Test credentials for sandbox
+      const authData = {
+        clientKey: "5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6",
+        apiLoginID: "5KP3u95bQpv"
+      };
+
+      const hostedFieldOptions = {
+        authData: authData,
+        containerIds: {
+          cardNumber: "cardNumber",
+          expirationDate: "expirationDate", 
+          cardCode: "cardCode"
+        },
+        style: {
+          base: {
+            color: '#000',
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif'
+          }
+        }
+      };
+
+      window.Accept.render(hostedFieldOptions, "acceptUIContainer");
+      setHostedFieldsRendered(true);
+      
+      toast({
+        title: "Hosted Fields Rendered",
+        description: "Accept UI hosted form elements are now active",
+      });
+    } catch (error) {
+      console.error('Error rendering hosted fields:', error);
       toast({
         title: "Error",
-        description: "Please enter a valid payment amount.",
-        variant: "destructive"
+        description: "Failed to render hosted form elements",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!window.Accept) {
+      toast({
+        title: "Error",
+        description: "Accept.js is not loaded",
+        variant: "destructive",
       });
       return;
     }
 
-    // AcceptUI parameters for hosted payment form
-    const acceptUIParams = {
-      // Replace these with your actual Authorize.Net credentials
-      apiLoginId: 'YOUR_API_LOGIN_ID',
-      transactionKey: 'YOUR_TRANSACTION_KEY',
-      
-      // Transaction details
-      amount: customerInfo.amount,
-      invoiceNumber: customerInfo.invoiceNumber || `INV-${Date.now()}`,
-      description: customerInfo.description || 'Payment Transaction',
-      
-      // Customer information
-      firstName: customerInfo.firstName,
-      lastName: customerInfo.lastName,
-      email: customerInfo.email,
-      phone: customerInfo.phone,
-      address: customerInfo.address,
-      city: customerInfo.city,
-      state: customerInfo.state,
-      zip: customerInfo.zip,
-      
-      // AcceptUI specific parameters
-      acceptUIFormBtnTxt: 'Pay Now',
-      acceptUIFormHeaderTxt: 'Secure Payment',
-      showReceipt: 'true',
-      relayResponseURL: window.location.origin + '/payment-response', // Your response handler
-      
-      // Test environment
-      testMode: 'true'
+    const paymentForm = {
+      cardData: {
+        // The hosted fields will automatically populate this
+      },
+      authData: {
+        clientKey: "5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6",
+        apiLoginID: "5KP3u95bQpv"
+      }
     };
 
-    // Create form data for POST to AcceptUI
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://test.authorize.net/gateway/transact.dll'; // Test URL
-    form.target = '_blank';
-
-    // Add all parameters as hidden inputs
-    Object.entries(acceptUIParams).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value.toString();
-      form.appendChild(input);
-    });
-
-    // Add required AcceptUI type parameter
-    const typeInput = document.createElement('input');
-    typeInput.type = 'hidden';
-    typeInput.name = 'type';
-    typeInput.value = 'AUTH_CAPTURE';
-    form.appendChild(typeInput);
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-
-    toast({
-      title: "Redirecting to AcceptUI",
-      description: "Opening Authorize.Net hosted payment form in a new tab.",
-      variant: "default"
-    });
-  };
-
-  const openAcceptUIHosted = () => {
-    // Alternative: Direct iframe embedding approach
-    const hostedFormUrl = `https://test.authorize.net/payment/payment`;
-    
-    // In a real implementation, you would:
-    // 1. Create a transaction on your server
-    // 2. Get a form token from Authorize.Net
-    // 3. Use that token to embed the hosted form
-    
-    toast({
-      title: "AcceptUI Hosted Form",
-      description: "In production, this would embed the hosted payment form directly on your page.",
-      variant: "default"
+    window.Accept.dispatchData(paymentForm, (response: any) => {
+      if (response.messages.resultCode === "Error") {
+        const errors = response.messages.message.map((msg: any) => msg.text).join(', ');
+        toast({
+          title: "Payment Token Error",
+          description: errors,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Payment Token Generated",
+          description: `Token: ${response.opaqueData.dataDescriptor}`,
+        });
+        console.log('Payment Token Response:', response);
+      }
     });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <Globe className="h-8 w-8 text-accent" />
-            <h1 className="text-3xl font-bold text-foreground">
-              AcceptUI Payment Integration
-            </h1>
-          </div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Process payments using Authorize.Net's hosted payment forms for maximum security and PCI compliance
-          </p>
-          <div className="flex justify-center gap-2">
-            <Badge variant="secondary" className="gap-2">
-              <Shield className="h-4 w-4" />
-              PCI Compliant
-            </Badge>
-            <Badge variant="outline" className="gap-2">
-              <Globe className="h-4 w-4" />
-              Hosted Solution
-            </Badge>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Accept UI Testing</h1>
+            <p className="text-muted-foreground">
+              Test AcceptJS hosted form elements within custom forms
+            </p>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Customer Information */}
-          <Card className="shadow-card bg-gradient-card">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Customer & Transaction Details
-              </CardTitle>
+              <CardTitle>Customer Information</CardTitle>
               <CardDescription>
-                Enter customer and transaction information for AcceptUI processing
+                Enter customer details for the transaction
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
-                    placeholder="John"
                     value={customerInfo.firstName}
                     onChange={(e) => handleCustomerInfoChange('firstName', e.target.value)}
                   />
@@ -186,7 +210,6 @@ const AcceptUIForm = () => {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
-                    placeholder="Doe"
                     value={customerInfo.lastName}
                     onChange={(e) => handleCustomerInfoChange('lastName', e.target.value)}
                   />
@@ -196,53 +219,52 @@ const AcceptUIForm = () => {
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
-                  id="email"
+                  id="email" 
                   type="email"
-                  placeholder="john.doe@example.com"
                   value={customerInfo.email}
                   onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  placeholder="(555) 123-4567"
                   value={customerInfo.phone}
                   onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
                 />
               </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <Label className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Billing Address
-                </Label>
-                
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={customerInfo.address}
+                  onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
                   <Input
-                    placeholder="123 Main Street"
-                    value={customerInfo.address}
-                    onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    placeholder="City"
+                    id="city"
                     value={customerInfo.city}
                     onChange={(e) => handleCustomerInfoChange('city', e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
                   <Input
-                    placeholder="State"
+                    id="state"
                     value={customerInfo.state}
                     onChange={(e) => handleCustomerInfoChange('state', e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zip">ZIP Code</Label>
                   <Input
-                    placeholder="ZIP"
+                    id="zip"
                     value={customerInfo.zip}
                     onChange={(e) => handleCustomerInfoChange('zip', e.target.value)}
                   />
@@ -251,152 +273,139 @@ const AcceptUIForm = () => {
             </CardContent>
           </Card>
 
-          {/* Transaction Information */}
-          <Card className="shadow-card bg-gradient-card">
+          {/* Transaction Details */}
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-accent" />
-                Transaction Information
-              </CardTitle>
+              <CardTitle>Transaction Details</CardTitle>
               <CardDescription>
-                Configure payment details for the AcceptUI hosted form
+                Configure transaction amount and description
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="amount">Payment Amount *</Label>
+                <Label htmlFor="amount">Amount ($)</Label>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  placeholder="99.99"
                   value={customerInfo.amount}
                   onChange={(e) => handleCustomerInfoChange('amount', e.target.value)}
-                  required
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                <Label htmlFor="invoice">Invoice Number</Label>
                 <Input
-                  id="invoiceNumber"
-                  placeholder="INV-001 (auto-generated if empty)"
-                  value={customerInfo.invoiceNumber}
-                  onChange={(e) => handleCustomerInfoChange('invoiceNumber', e.target.value)}
+                  id="invoice"
+                  value={customerInfo.invoice}
+                  onChange={(e) => handleCustomerInfoChange('invoice', e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  placeholder="Payment for services"
                   value={customerInfo.description}
                   onChange={(e) => handleCustomerInfoChange('description', e.target.value)}
                 />
               </div>
 
-              <Separator />
-
-              <div className="space-y-4">
-                <Alert>
-                  <Shield className="h-4 w-4" />
-                  <AlertDescription>
-                    AcceptUI provides maximum security by hosting the payment form on Authorize.Net's servers, ensuring PCI compliance without handling sensitive payment data.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="space-y-3">
-                  <Button
-                    onClick={generateAcceptUIUrl}
-                    className="w-full shadow-button bg-gradient-primary"
-                    size="lg"
-                    disabled={!customerInfo.amount}
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Launch AcceptUI Payment Form
-                  </Button>
-                  
-                  <Button
-                    onClick={openAcceptUIHosted}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Globe className="mr-2 h-4 w-4" />
-                    Demo: Embedded Hosted Form
-                  </Button>
-                </div>
-
-                <div className="text-sm text-muted-foreground space-y-2">
-                  <p><strong>AcceptUI Options:</strong></p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Hosted Payment Form (redirects to Authorize.Net)</li>
-                    <li>Embedded iframe (hosted form within your page)</li>
-                    <li>Lightbox popup (overlay modal)</li>
-                  </ul>
-                </div>
+              <div className="pt-4">
+                <Button 
+                  onClick={renderHostedFields}
+                  disabled={!isAcceptLoaded || hostedFieldsRendered}
+                  className="w-full"
+                >
+                  {hostedFieldsRendered ? 'Hosted Fields Ready' : 'Render Hosted Fields'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Integration Methods */}
-        <Card className="shadow-card bg-gradient-card">
+        {/* Accept UI Hosted Form Elements */}
+        {isAcceptLoaded && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Accept UI Hosted Payment Form</CardTitle>
+              <CardDescription>
+                Secure hosted form elements powered by AcceptJS
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                <div id="acceptUIContainer">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Card Number</Label>
+                      <div id="cardNumber" className="border rounded-md p-3 bg-background min-h-[44px]"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Expiration Date</Label>
+                      <div id="expirationDate" className="border rounded-md p-3 bg-background min-h-[44px]"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CVV</Label>
+                      <div id="cardCode" className="border rounded-md p-3 bg-background min-h-[44px]"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={!hostedFieldsRendered}
+                  className="w-full"
+                >
+                  Generate Payment Token
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Testing Information */}
+        <Card className="border-muted">
           <CardHeader>
-            <CardTitle>AcceptUI Integration Methods</CardTitle>
+            <CardTitle>Accept UI Testing Information</CardTitle>
             <CardDescription>
-              Choose the integration method that best fits your application needs
+              Essential information for testing Accept UI hosted forms
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="space-y-3">
-                <Badge className="bg-accent text-accent-foreground">Redirect Method</Badge>
-                <h3 className="font-semibold">Full Page Redirect</h3>
-                <p className="text-sm text-muted-foreground">
-                  Customer is redirected to Authorize.Net's secure payment page and returns to your site after payment.
-                </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside">
-                  <li>Highest security</li>
-                  <li>PCI compliance</li>
-                  <li>Mobile optimized</li>
-                </ul>
-              </div>
-
-              <div className="space-y-3">
-                <Badge variant="outline">Embedded Method</Badge>
-                <h3 className="font-semibold">Iframe Embedding</h3>
-                <p className="text-sm text-muted-foreground">
-                  Payment form is embedded directly into your page using a secure iframe.
-                </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside">
-                  <li>Seamless UX</li>
-                  <li>Brand consistency</li>
-                  <li>Still PCI compliant</li>
-                </ul>
-              </div>
-
-              <div className="space-y-3">
-                <Badge variant="secondary">Lightbox Method</Badge>
-                <h3 className="font-semibold">Modal Overlay</h3>
-                <p className="text-sm text-muted-foreground">
-                  Payment form appears as a modal overlay on your current page.
-                </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside">
-                  <li>Modern UI</li>
-                  <li>Quick checkout</li>
-                  <li>Mobile friendly</li>
-                </ul>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Test Credentials (Sandbox):</h4>
+              <div className="bg-muted p-3 rounded text-sm font-mono">
+                <div>API Login ID: 5KP3u95bQpv</div>
+                <div>Client Key: 5FcB6WrfHGS76gHW3v7btBCE3HuuBuke9Pj96Ztfn5R32G5ep42vne7MCWp5LnN6</div>
               </div>
             </div>
 
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Setup Required:</strong> Replace YOUR_API_LOGIN_ID and YOUR_TRANSACTION_KEY with your actual Authorize.Net sandbox credentials. For production, change the form action URL to https://secure2.authorize.net/gateway/transact.dll
-              </AlertDescription>
-            </Alert>
+            <div>
+              <h4 className="font-medium mb-2">Test Credit Card Numbers:</h4>
+              <div className="bg-muted p-3 rounded text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>Visa: 4111111111111111</div>
+                  <div>MasterCard: 5555555555554444</div>
+                  <div>American Express: 378282246310005</div>
+                  <div>Discover: 6011111111111117</div>
+                </div>
+                <div className="mt-2 text-muted-foreground">
+                  Use any future expiration date and any 3-4 digit CVV
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-2">Accept UI Features:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Hosted form elements embedded in custom forms</li>
+                <li>• AcceptJS tokenization with enhanced security</li>
+                <li>• Customizable styling and validation</li>
+                <li>• Reduced PCI compliance scope</li>
+                <li>• Real-time field validation</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>

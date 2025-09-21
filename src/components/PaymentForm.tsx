@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, CreditCard, User, MapPin, Eye, EyeOff } from 'lucide-react';
+import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CustomerInfo {
@@ -29,7 +29,11 @@ interface PaymentToken {
   };
 }
 
-const PaymentForm = () => {
+interface PaymentFormProps {
+  onBack: () => void;
+}
+
+const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
