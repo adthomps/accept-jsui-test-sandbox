@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
 import AcceptUIFormV2 from './AcceptUIFormV2';
+import AcceptJSv1Form from './AcceptJSv1Form';
 import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
@@ -16,6 +17,10 @@ const PaymentMethodSelector = () => {
 
   if (selectedMethod === 'acceptjs') {
     return <PaymentForm onBack={() => setSelectedMethod(null)} />;
+  }
+
+  if (selectedMethod === 'acceptjs-v1') {
+    return <AcceptJSv1Form onBack={() => setSelectedMethod(null)} />;
   }
 
   if (selectedMethod === 'acceptui-v2') {
@@ -63,17 +68,18 @@ const PaymentMethodSelector = () => {
 
         {/* Method Comparison */}
         <Tabs defaultValue="comparison" className="w-full max-w-6xl">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="comparison">Compare Methods</TabsTrigger>
-            <TabsTrigger value="acceptjs">AcceptJS Details</TabsTrigger>
-            <TabsTrigger value="acceptui-v2">AcceptUI v2 Details</TabsTrigger>
-            <TabsTrigger value="acceptui-v3">AcceptUI v3 Details</TabsTrigger>
-            <TabsTrigger value="accepthosted">Accept Hosted Details</TabsTrigger>
-            <TabsTrigger value="sim">SIM (Legacy) Details</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="comparison">Compare</TabsTrigger>
+            <TabsTrigger value="acceptjs">AcceptJS</TabsTrigger>
+            <TabsTrigger value="acceptjs-v1">AcceptJS v1</TabsTrigger>
+            <TabsTrigger value="acceptui-v2">AcceptUI v2</TabsTrigger>
+            <TabsTrigger value="acceptui-v3">AcceptUI v3</TabsTrigger>
+            <TabsTrigger value="accepthosted">Hosted</TabsTrigger>
+            <TabsTrigger value="sim">SIM</TabsTrigger>
           </TabsList>
 
           <TabsContent value="comparison" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -116,29 +122,69 @@ const PaymentMethodSelector = () => {
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    Accept UI v2
-                    <Badge variant="outline">Enhanced AcceptJS</Badge>
+                    Accept.js v1
+                    <Badge variant="outline">SAQ A-EP</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Enhanced AcceptJS using v2/Accept.js with improved UX
+                    Custom form tokenization using api2.authorize.net
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Enhanced AcceptJS tokenization</li>
-                      <li>• Improved response processing</li>
-                      <li>• Modern styling and animations</li>
-                      <li>• Dynamic auth configuration</li>
+                      <li>• Full UX control</li>
+                      <li>• Custom form design</li>
+                      <li>• Client-side tokenization</li>
+                      <li>• Direct Accept.dispatchData</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Improved AcceptJS experience</li>
-                      <li>• Enhanced error handling</li>
-                      <li>• Better response feedback</li>
+                      <li>• Complete design control</li>
+                      <li>• Custom checkout UX</li>
+                      <li>• Enterprise applications</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    onClick={() => setSelectedMethod('acceptjs-v1')}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    Test Accept.js v1
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Accept UI v2
+                    <Badge variant="outline">SAQ A Legacy</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Legacy popup modal using v2/AcceptUI.js
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Key Features:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Legacy popup lightbox</li>
+                      <li>• jQuery/Bootstrap deps</li>
+                      <li>• DOM modal creation</li>
+                      <li>• Button attribute config</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Best For:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Legacy maintenance</li>
+                      <li>• Migration testing</li>
+                      <li>• Comparison with v3</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -157,28 +203,28 @@ const PaymentMethodSelector = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     Accept UI v3
-                    <Badge variant="outline">Experimental</Badge>
+                    <Badge variant="secondary">SAQ A Modern</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Testing v3/AcceptUI.js library with API research
+                    Modern iframe overlay using v3/AcceptUI.js
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• v3/AcceptUI.js library testing</li>
-                      <li>• API method discovery</li>
-                      <li>• Experimental implementation</li>
-                      <li>• Enhanced response processing</li>
+                      <li>• Modern iframe overlay</li>
+                      <li>• Hosted card UI</li>
+                      <li>• Button attribute config</li>
+                      <li>• Minimal front-end deps</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• API research and testing</li>
-                      <li>• v3 library exploration</li>
-                      <li>• Method compatibility testing</li>
+                      <li>• New implementations</li>
+                      <li>• Fast hosted popup</li>
+                      <li>• Minimal PCI scope</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -186,7 +232,7 @@ const PaymentMethodSelector = () => {
                   <Button 
                     onClick={() => setSelectedMethod('acceptui-v3')}
                     className="w-full"
-                    variant="outline"
+                    variant="secondary"
                   >
                     Test AcceptUI v3
                   </Button>
@@ -368,21 +414,21 @@ const PaymentMethodSelector = () => {
         </Tabs>
 
         {/* Additional Information */}
-        <Card className="shadow-card bg-gradient-card">
-          <CardHeader>
-            <CardTitle>Testing Information</CardTitle>
-            <CardDescription>
-              Important notes for testing both integration methods
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="shadow-card bg-gradient-card">
+            <CardHeader>
+              <CardTitle>Testing Information</CardTitle>
+              <CardDescription>
+                Important notes for testing Accept.js integrations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-3">
-                <h3 className="font-semibold">Test Credentials Needed</h3>
+                <h3 className="font-semibold">Test Credentials</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>API Login ID (for both methods)</li>
-                  <li>Transaction Key (AcceptUI)</li>
-                  <li>Client Key (AcceptJS)</li>
+                  <li>API Login ID (all methods)</li>
+                  <li>Transaction Key (server processing)</li>
+                  <li>Client Key (client tokenization)</li>
                   <li>Sandbox account from Authorize.Net</li>
                 </ul>
               </div>
@@ -395,9 +441,36 @@ const PaymentMethodSelector = () => {
                   <li>Any future expiry date and CVV</li>
                 </ul>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card bg-gradient-card">
+            <CardHeader>
+              <CardTitle>Endpoint Summary</CardTitle>
+              <CardDescription>
+                Library URLs and tokenization endpoints
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <h3 className="font-semibold">Sandbox Libraries</h3>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>v1/Accept.js → api2.authorize.net</li>
+                  <li>v2/AcceptUI.js → api.authorize.net</li>
+                  <li>v3/AcceptUI.js → api.authorize.net</li>
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <h3 className="font-semibold">CSP Requirements</h3>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>connect-src: api.authorize.net, api2.authorize.net</li>
+                  <li>script-src: js.authorize.net, jstest.authorize.net</li>
+                  <li>frame-src: js.authorize.net, jstest.authorize.net</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -82,7 +82,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
 
         // Load AcceptUI v2
         const script = document.createElement('script');
-        script.src = 'https://jstest.authorize.net/v2/Accept.js';
+        script.src = 'https://jstest.authorize.net/v2/AcceptUI.js';
         script.charset = 'utf-8';
         
         script.onload = () => {
