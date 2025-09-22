@@ -61,7 +61,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
   const [paymentResponse, setPaymentResponse] = useState<any>(null);
   const [showResponseDetails, setShowResponseDetails] = useState(true);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
-
+  const acceptUIButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const loadAuthConfigAndAcceptJS = async () => {
       try {
@@ -91,11 +91,6 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
           setIsAcceptLoaded(true);
           setAcceptError(null);
           
-          // Create AcceptUI button after script loads and config is available
-          if (config && buttonContainerRef.current) {
-            createAcceptUIButton(config);
-          }
-          
           toast({
             title: "AcceptUI v2 Ready",
             description: "Enhanced AcceptJS tokenization loaded successfully",
@@ -118,19 +113,10 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
     loadAuthConfigAndAcceptJS();
 
     return () => {
-      // Clean up script
       const script = document.querySelector('script[src*="Accept.js"]');
       if (script) {
         script.remove();
       }
-      
-      // Clean up button container safely
-      if (buttonContainerRef.current) {
-        while (buttonContainerRef.current.firstChild) {
-          buttonContainerRef.current.removeChild(buttonContainerRef.current.firstChild);
-        }
-      }
-      
       setIsAcceptLoaded(false);
       setAcceptError(null);
     };
@@ -165,8 +151,15 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
 
   // Update button when config changes and AcceptUI is loaded
   useEffect(() => {
-    if (authConfig && isAcceptLoaded && buttonContainerRef.current) {
-      createAcceptUIButton(authConfig);
+    if (authConfig && isAcceptLoaded && acceptUIButtonRef.current) {
+      const btn = acceptUIButtonRef.current;
+      btn.setAttribute('data-billingAddressOptions', '{"show":true, "required":false}');
+      btn.setAttribute('data-apiLoginID', authConfig.apiLoginId);
+      btn.setAttribute('data-clientKey', authConfig.clientKey);
+      btn.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
+      btn.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
+      btn.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
+      btn.setAttribute('data-responseHandler', 'acceptUIV2ResponseHandler');
     }
   }, [authConfig, isAcceptLoaded]);
 
@@ -474,14 +467,22 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
                   </div>
                 </div>
 
-                <div ref={buttonContainerRef} className="w-full">
+                <div className="w-full">
                   {!authConfig || !isAcceptLoaded ? (
                     <Alert>
                       <AlertDescription>
                         {acceptError || 'Loading AcceptUI v2 configuration...'}
                       </AlertDescription>
                     </Alert>
-                  ) : null}
+                  ) : (
+                    <button
+                      ref={acceptUIButtonRef}
+                      type="button"
+                      className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
+                    >
+                      Open AcceptUI v2 Lightbox Payment
+                    </button>
+                  )}
                 </div>
               </form>
             </CardContent>
