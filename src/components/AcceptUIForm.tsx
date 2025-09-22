@@ -143,7 +143,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     button.setAttribute('data-clientKey', config.clientKey);
     button.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
     button.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
-    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
+    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": true}');
     button.setAttribute('data-responseHandler', 'acceptUIResponseHandler');
     
     buttonContainerRef.current.appendChild(button);
