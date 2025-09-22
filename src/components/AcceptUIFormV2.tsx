@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
 
@@ -51,7 +51,6 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
     invoice: 'INV-' + Date.now(),
     description: 'AcceptUI v2 Test Transaction'
   });
-
   const [isAcceptLoaded, setIsAcceptLoaded] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [authConfig, setAuthConfig] = useState<any>(null);
@@ -63,7 +62,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
   const buttonContainerRef = useRef<HTMLDivElement>(null);
   const acceptUIButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    const loadAuthConfigAndAcceptJS = async () => {
+    const loadAuthConfigAndAcceptUI = async () => {
       try {
         // Get auth configuration
         const configResponse = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/get-auth-config');
@@ -81,20 +80,20 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
           existingScript.remove();
         }
 
-        // Load Accept.js v2 for AcceptUI v2
+        // Load AcceptUI v2
         const script = document.createElement('script');
-        script.src = `${config.environment.jsUrl}/v1/Accept.js`;
+        script.src = 'https://jstest.authorize.net/v2/Accept.js';
         script.charset = 'utf-8';
         
         script.onload = () => {
-          console.log('AcceptUI v2 (Accept.js) loaded successfully');
-          console.log('window.Accept object:', window.Accept);
+          console.log('AcceptUI v2 loaded, window.Accept:', window.Accept);
+          console.log('Available methods:', window.Accept ? Object.keys(window.Accept) : 'No Accept object');
           setIsAcceptLoaded(true);
           setAcceptError(null);
           
           toast({
             title: "AcceptUI v2 Ready",
-            description: "Enhanced AcceptJS tokenization loaded successfully",
+            description: "v2/Accept.js library loaded successfully",
           });
         };
         
@@ -111,44 +110,19 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
       }
     };
 
-    loadAuthConfigAndAcceptJS();
+    loadAuthConfigAndAcceptUI();
 
     return () => {
+      // Clean up script
       const script = document.querySelector('script[src*="Accept.js"]');
       if (script) {
         script.remove();
       }
+      
       setIsAcceptLoaded(false);
       setAcceptError(null);
     };
   }, [toast]);
-
-  // Create AcceptUI button dynamically after library loads
-  const createAcceptUIButton = (config: any) => {
-    if (!buttonContainerRef.current || !config) return;
-    
-    // Clear existing content safely
-    while (buttonContainerRef.current.firstChild) {
-      buttonContainerRef.current.removeChild(buttonContainerRef.current.firstChild);
-    }
-    
-    // Create button element
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity';
-    button.textContent = 'Open AcceptUI v2 Lightbox Payment';
-    
-    // Set AcceptUI data attributes (lowercase as required by React but AcceptUI should still work)
-    button.setAttribute('data-billingaddressoptions', '{"show":true, "required":false}');
-    button.setAttribute('data-apiloginid', config.apiLoginId);
-    button.setAttribute('data-clientkey', config.clientKey);
-    button.setAttribute('data-acceptuiformbtntxt', 'Complete Payment');
-    button.setAttribute('data-acceptuiformheadertxt', 'Payment Information');
-    button.setAttribute('data-paymentoptions', '{"showCreditCard": true, "showBankAccount": false}');
-    button.setAttribute('data-responsehandler', 'acceptUIV2ResponseHandler');
-    
-    buttonContainerRef.current.appendChild(button);
-  };
 
   // Update button when config changes and AcceptUI is loaded
   useEffect(() => {
@@ -170,11 +144,11 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
         attributes: btn.attributes
       });
       
-      // Trigger AcceptUI to scan for new buttons
-      if (window.Accept && typeof window.Accept.dispatchData === 'function') {
-        console.log('AcceptUI v2 library ready for dispatch');
+      // Check available methods on window.Accept
+      if (window.Accept) {
+        console.log('AcceptUI v2 methods available:', Object.keys(window.Accept));
       } else {
-        console.warn('AcceptUI v2 dispatchData method not available');
+        console.warn('AcceptUI v2 Accept object not available');
       }
     }
   }, [authConfig, isAcceptLoaded]);
@@ -342,7 +316,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
               AcceptUI v2 Testing
             </h1>
             <p className="text-muted-foreground">
-              Enhanced AcceptJS implementation with improved UX and styling
+              Testing v2/Accept.js library with lightbox functionality
             </p>
           </div>
           <div className="ml-auto">
@@ -454,19 +428,19 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
             </CardContent>
           </Card>
 
-          {/* Payment Information */}
+          {/* AcceptUI v2 Lightbox Payment */}
           <Card className="shadow-card bg-gradient-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                AcceptUI v2 Payment Form
+                AcceptUI v2 Lightbox Payment
               </CardTitle>
               <CardDescription>
-                Enhanced secure payment processing with improved styling
+                Click button to open AcceptUI v2 lightbox for secure payment entry
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <form id="acceptUIV2PaymentForm" className="space-y-4">
+              <form id="acceptUIPaymentForm" className="space-y-4">
                 <input type="hidden" name="dataValue" id="dataValue" />
                 <input type="hidden" name="dataDescriptor" id="dataDescriptor" />
                 
@@ -476,159 +450,104 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
                       <h4 className="font-medium">Payment Amount</h4>
                       <p className="text-2xl font-bold text-primary">${customerInfo.amount}</p>
                     </div>
-                    <Badge variant="outline" className="gap-2">
-                      <Shield className="h-4 w-4" />
-                      Secure Lightbox
-                    </Badge>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <div>Transaction Type: Sale</div>
+                      <div>Invoice: {customerInfo.invoice}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="w-full">
-                  {!authConfig ? (
-                    <Alert>
-                      <AlertDescription>
-                        {acceptError || 'Loading AcceptUI v2 configuration...'}
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <button
-                      ref={acceptUIButtonRef}
-                      type="button"
-                      className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
-                      data-billingaddressoptions='{"show":true, "required":false}'
-                      data-apiloginid={authConfig.apiLoginId}
-                      data-clientkey={authConfig.clientKey}
-                      data-acceptuiformbtntxt="Complete Payment"
-                      data-acceptuiformheadertxt="Payment Information"
-                      data-paymentoptions='{"showCreditCard": true, "showBankAccount": false}'
-                      data-responsehandler="acceptUIV2ResponseHandler"
-                    >
-                      Open AcceptUI v2 Lightbox Payment
-                    </button>
-                  )}
-                </div>
+                 <div className="w-full">
+                   {!authConfig ? (
+                     <Alert>
+                       <AlertDescription>
+                         {acceptError || 'Loading AcceptUI v2 configuration...'}
+                       </AlertDescription>
+                     </Alert>
+                   ) : (
+                     <button
+                       ref={acceptUIButtonRef}
+                       type="button"
+                       className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
+                       data-billingaddressoptions='{"show":true, "required":false}'
+                       data-apiloginid={authConfig.apiLoginId}
+                       data-clientkey={authConfig.clientKey}
+                       data-acceptuiformbtntxt="Complete Payment"
+                       data-acceptuiformheadertxt="Payment Information"
+                       data-paymentoptions='{"showCreditCard": true, "showBankAccount": false}'
+                       data-responsehandler="acceptUIV2ResponseHandler"
+                     >
+                       Open AcceptUI v2 Lightbox Payment
+                     </button>
+                   )}
+                 </div>
               </form>
+              
+              {paymentToken && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="gap-1">
+                      <Shield className="h-3 w-3" />
+                      Payment Token Ready
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setShowTokenDetails(!showTokenDetails)}
+                    >
+                      {showTokenDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  
+                  {showTokenDetails && (
+                    <div className="p-3 bg-muted/30 rounded border text-sm font-mono">
+                      <div className="space-y-1">
+                        <div><strong>Descriptor:</strong> {paymentToken.opaqueData?.dataDescriptor}</div>
+                        <div><strong>Value:</strong> {paymentToken.opaqueData?.dataValue}</div>
+                        <div><strong>Card:</strong> {paymentToken.encryptedCardData?.cardNumber || 'N/A'}</div>
+                        <div><strong>Customer:</strong> {paymentToken.customerInformation?.firstName} {paymentToken.customerInformation?.lastName}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={processPayment} 
+                    disabled={isProcessing}
+                    className="w-full"
+                  >
+                    {isProcessing ? 'Processing...' : 'Process Payment'}
+                  </Button>
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="font-medium">AcceptUI v2 Implementation Details:</div>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Uses jstest.authorize.net/v2/Accept.js library</li>
+                  <li>• Lightbox payment form integration</li>
+                  <li>• Secure tokenization of payment data</li>
+                </ul>
+              </div>
+              
+              <div className="mt-4 p-3 bg-accent/10 rounded-lg border">
+                <div className="text-sm font-medium mb-2">AcceptUI v2 Status</div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>Library: jstest.authorize.net/v2/Accept.js</div>
+                  <div>Method: window.Accept.dispatchData (if available)</div>
+                  <div>Status: {isAcceptLoaded ? '✅ Loaded' : '⏳ Loading...'}</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Token Display & Processing */}
-        {paymentToken && (
-          <Card className="shadow-card bg-gradient-card">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-accent" />
-                  AcceptUI v2 Payment Token
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTokenDetails(!showTokenDetails)}
-                >
-                  {showTokenDetails ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showTokenDetails ? 'Hide' : 'Show'} Details
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Enhanced token display with detailed information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {showTokenDetails && (
-                <div className="space-y-4">
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                      <Label>Result Code</Label>
-                      <Input
-                        value={paymentToken.messages?.resultCode || ''}
-                        readOnly
-                        className="font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Data Descriptor</Label>
-                      <Input
-                        value={paymentToken.opaqueData?.dataDescriptor || ''}
-                        readOnly
-                        className="font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Token Length</Label>
-                      <Input
-                        value={paymentToken.opaqueData?.dataValue?.length || 0}
-                        readOnly
-                        className="font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <Alert>
-                <Shield className="h-4 w-4" />
-                <AlertDescription>
-                  AcceptUI v2 payment token generated successfully with enhanced security features.
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                onClick={processPayment}
-                disabled={isProcessing}
-                className="w-full shadow-button bg-gradient-primary"
-                size="lg"
-              >
-                {isProcessing ? 'Processing AcceptUI v2 Payment...' : 'Process AcceptUI v2 Payment'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Payment Response Display */}
-        {paymentResponse && showResponseDetails && (
+        {paymentResponse && (
           <PaymentResponseDisplay 
             response={paymentResponse}
-            onDismiss={() => {
-              setPaymentResponse(null);
-              setShowResponseDetails(false);
-            }}
+            onDismiss={() => setPaymentResponse(null)}
           />
         )}
-
-        {/* AcceptUI v2 Information */}
-        <Card className="border-muted shadow-card">
-          <CardHeader>
-            <CardTitle>AcceptUI v2 Features</CardTitle>
-            <CardDescription>
-              Enhanced AcceptJS implementation with improved user experience
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-2">Enhanced Features:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Dynamic authentication configuration</li>
-                  <li>• Enhanced response processing with PaymentResponseDisplay</li>
-                  <li>• Improved error handling and user feedback</li>
-                  <li>• Modern gradient styling and animations</li>
-                  <li>• Detailed token information display</li>
-                  <li>• Processing timestamps and request tracking</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Test Information:</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <div>Uses: {authConfig?.environment?.jsUrl}/v1/Accept.js</div>
-                  <div>Test Cards: 4111111111111111 (Visa)</div>
-                  <div>Expiry: Any future date</div>
-                  <div>CVV: Any 3-4 digits</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
