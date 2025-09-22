@@ -483,7 +483,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                 </div>
 
                  <div className="w-full">
-                   {!authConfig || !isAcceptLoaded ? (
+                   {!authConfig ? (
                      <Alert>
                        <AlertDescription>
                          {acceptError || 'Loading AcceptUI v3 configuration...'}
@@ -494,6 +494,13 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                        ref={acceptUIButtonRef}
                        type="button"
                        className="AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity"
+                       data-billingaddressoptions='{"show":true, "required":false}'
+                       data-apiloginid={authConfig.apiLoginId}
+                       data-clientkey={authConfig.clientKey}
+                       data-acceptuiformbtntxt="Complete Payment"
+                       data-acceptuiformheadertxt="Payment Information"
+                       data-paymentoptions='{"showCreditCard": true, "showBankAccount": false}'
+                       data-responsehandler="acceptUIResponseHandler"
                      >
                        Open AcceptUI v3 Lightbox Payment
                      </button>
