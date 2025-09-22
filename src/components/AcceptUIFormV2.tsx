@@ -88,6 +88,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
         
         script.onload = () => {
           console.log('AcceptUI v2 (Accept.js) loaded successfully');
+          console.log('window.Accept object:', window.Accept);
           setIsAcceptLoaded(true);
           setAcceptError(null);
           
@@ -152,6 +153,7 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
   // Update button when config changes and AcceptUI is loaded
   useEffect(() => {
     if (authConfig && isAcceptLoaded && acceptUIButtonRef.current) {
+      console.log('Setting AcceptUI v2 attributes...');
       const btn = acceptUIButtonRef.current;
       btn.setAttribute('data-billingAddressOptions', '{"show":true, "required":false}');
       btn.setAttribute('data-apiLoginID', authConfig.apiLoginId);
@@ -160,6 +162,20 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
       btn.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
       btn.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
       btn.setAttribute('data-responseHandler', 'acceptUIV2ResponseHandler');
+      
+      console.log('AcceptUI v2 button attributes set:', {
+        apiLoginID: authConfig.apiLoginId,
+        clientKey: authConfig.clientKey,
+        className: btn.className,
+        attributes: btn.attributes
+      });
+      
+      // Trigger AcceptUI to scan for new buttons
+      if (window.Accept && typeof window.Accept.dispatchData === 'function') {
+        console.log('AcceptUI v2 library ready for dispatch');
+      } else {
+        console.warn('AcceptUI v2 dispatchData method not available');
+      }
     }
   }, [authConfig, isAcceptLoaded]);
 

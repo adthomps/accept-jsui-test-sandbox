@@ -87,11 +87,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
         
         script.onload = () => {
           console.log('AcceptUI v3 loaded, window.Accept:', window.Accept);
-          setIsAcceptLoaded(true);
-          setAcceptError(null);
-          
-          // AcceptUI script loaded
-          console.log('AcceptUI v3 loaded, window.Accept:', window.Accept);
+          console.log('Available methods:', window.Accept ? Object.keys(window.Accept) : 'No Accept object');
           setIsAcceptLoaded(true);
           setAcceptError(null);
           
@@ -156,6 +152,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   // Update button when config changes and AcceptUI is loaded
   useEffect(() => {
     if (authConfig && isAcceptLoaded && acceptUIButtonRef.current) {
+      console.log('Setting AcceptUI v3 attributes...');
       const btn = acceptUIButtonRef.current;
       btn.setAttribute('data-billingAddressOptions', '{"show":true, "required":false}');
       btn.setAttribute('data-apiLoginID', authConfig.apiLoginId);
@@ -164,6 +161,20 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
       btn.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
       btn.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
       btn.setAttribute('data-responseHandler', 'acceptUIResponseHandler');
+      
+      console.log('AcceptUI v3 button attributes set:', {
+        apiLoginID: authConfig.apiLoginId,
+        clientKey: authConfig.clientKey,
+        className: btn.className,
+        attributes: btn.attributes
+      });
+      
+      // Check available methods on window.Accept
+      if (window.Accept) {
+        console.log('AcceptUI v3 methods available:', Object.keys(window.Accept));
+      } else {
+        console.warn('AcceptUI v3 Accept object not available');
+      }
     }
   }, [authConfig, isAcceptLoaded]);
 
