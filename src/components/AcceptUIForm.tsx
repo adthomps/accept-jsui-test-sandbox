@@ -117,10 +117,19 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     loadAuthConfigAndAcceptUI();
 
     return () => {
+      // Clean up script
       const script = document.querySelector('script[src*="AcceptUI.js"]');
       if (script) {
         script.remove();
       }
+      
+      // Clean up button container safely
+      if (buttonContainerRef.current) {
+        while (buttonContainerRef.current.firstChild) {
+          buttonContainerRef.current.removeChild(buttonContainerRef.current.firstChild);
+        }
+      }
+      
       setIsAcceptLoaded(false);
       setAcceptError(null);
     };

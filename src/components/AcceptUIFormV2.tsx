@@ -118,10 +118,19 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
     loadAuthConfigAndAcceptJS();
 
     return () => {
+      // Clean up script
       const script = document.querySelector('script[src*="Accept.js"]');
       if (script) {
         script.remove();
       }
+      
+      // Clean up button container safely
+      if (buttonContainerRef.current) {
+        while (buttonContainerRef.current.firstChild) {
+          buttonContainerRef.current.removeChild(buttonContainerRef.current.firstChild);
+        }
+      }
+      
       setIsAcceptLoaded(false);
       setAcceptError(null);
     };
@@ -131,8 +140,10 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
   const createAcceptUIButton = (config: any) => {
     if (!buttonContainerRef.current || !config) return;
     
-    // Clear existing button
-    buttonContainerRef.current.innerHTML = '';
+    // Clear existing content safely
+    while (buttonContainerRef.current.firstChild) {
+      buttonContainerRef.current.removeChild(buttonContainerRef.current.firstChild);
+    }
     
     // Create button element
     const button = document.createElement('button');
@@ -140,14 +151,14 @@ const AcceptUIFormV2 = ({ onBack }: AcceptUIFormV2Props) => {
     button.className = 'AcceptUI w-full h-12 bg-gradient-primary text-primary-foreground rounded-lg font-medium shadow-button hover:opacity-90 transition-opacity';
     button.textContent = 'Open AcceptUI v2 Lightbox Payment';
     
-    // Set AcceptUI data attributes
-    button.setAttribute('data-billingAddressOptions', '{"show":true, "required":false}');
-    button.setAttribute('data-apiLoginID', config.apiLoginId);
-    button.setAttribute('data-clientKey', config.clientKey);
-    button.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
-    button.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
-    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
-    button.setAttribute('data-responseHandler', 'acceptUIV2ResponseHandler');
+    // Set AcceptUI data attributes (lowercase as required by React but AcceptUI should still work)
+    button.setAttribute('data-billingaddressoptions', '{"show":true, "required":false}');
+    button.setAttribute('data-apiloginid', config.apiLoginId);
+    button.setAttribute('data-clientkey', config.clientKey);
+    button.setAttribute('data-acceptuiformbtntxt', 'Complete Payment');
+    button.setAttribute('data-acceptuiformheadertxt', 'Payment Information');
+    button.setAttribute('data-paymentoptions', '{"showCreditCard": true, "showBankAccount": false}');
+    button.setAttribute('data-responsehandler', 'acceptUIV2ResponseHandler');
     
     buttonContainerRef.current.appendChild(button);
   };
