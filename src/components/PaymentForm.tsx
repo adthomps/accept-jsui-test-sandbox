@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
@@ -59,6 +61,9 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const [isAcceptJSLoaded, setIsAcceptJSLoaded] = useState(false);
   const [acceptJSError, setAcceptJSError] = useState<string | null>(null);
   const [authConfig, setAuthConfig] = useState<any>(null);
+  
+  // Payment type selection
+  const [paymentType, setPaymentType] = useState<'card' | 'bank'>('card');
   
   // Enhanced response handling
   const [paymentResponse, setPaymentResponse] = useState<any>(null);
@@ -156,24 +161,36 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
       apiLoginID: authConfig.apiLoginId
     };
 
-    const cardData = {
-      cardNumber: formData.get('cardNumber') as string,
-      month: formData.get('expMonth') as string,
-      year: formData.get('expYear') as string,
-      cardCode: formData.get('cvv') as string
-    };
-
-    console.log('Calling Accept.dispatchData with:', { authData, cardData });
-
     // Use AcceptJS to create payment token
     try {
-      const secureData = {
-        authData,
-        cardData: {
+      let secureData: any = { authData };
+
+      if (paymentType === 'card') {
+        const cardData = {
+          cardNumber: formData.get('cardNumber') as string,
+          month: formData.get('expMonth') as string,
+          year: formData.get('expYear') as string,
+          cardCode: formData.get('cvv') as string
+        };
+
+        secureData.cardData = {
           ...cardData,
           cardNumber: (cardData.cardNumber || '').replace(/\s+/g, ''),
-        },
-      };
+        };
+
+        console.log('Calling Accept.dispatchData with card data:', { authData, cardData });
+      } else {
+        const bankData = {
+          accountType: formData.get('accountType') as string,
+          routingNumber: formData.get('routingNumber') as string,
+          accountNumber: formData.get('accountNumber') as string,
+          nameOnAccount: formData.get('nameOnAccount') as string,
+          bankName: formData.get('bankName') as string || undefined
+        };
+
+        secureData.bankData = bankData;
+        console.log('Calling Accept.dispatchData with bank data:', { authData, bankData });
+      }
 
       (window as any).Accept.dispatchData(secureData, (response: any) => {
         console.log('Accept.js response:', response);
@@ -458,7 +475,11 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           <Card className="shadow-card bg-gradient-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
+                {paymentType === 'card' ? (
+                  <CreditCard className="h-5 w-5 text-primary" />
+                ) : (
+                  <Landmark className="h-5 w-5 text-primary" />
+                )}
                 Payment Information
               </CardTitle>
               <CardDescription>
@@ -467,52 +488,129 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePaymentSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    name="cardNumber"
-                    placeholder="4111 1111 1111 1111"
-                    maxLength={19}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="expMonth">Month</Label>
-                    <Input
-                      id="expMonth"
-                      name="expMonth"
-                      placeholder="12"
-                      maxLength={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="expYear">Year</Label>
-                    <Input
-                      id="expYear"
-                      name="expYear"
-                      placeholder="2025"
-                      maxLength={4}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input
-                      id="cvv"
-                      name="cvv"
-                      placeholder="123"
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
+                {/* Payment Type Selection */}
+                <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'card' | 'bank')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="card" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Credit Card
+                    </TabsTrigger>
+                    <TabsTrigger value="bank" className="flex items-center gap-2">
+                      <Landmark className="h-4 w-4" />
+                      Bank Account
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="card" className="space-y-6 mt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="cardNumber">Card Number</Label>
+                      <Input
+                        id="cardNumber"
+                        name="cardNumber"
+                        placeholder="4111 1111 1111 1111"
+                        maxLength={19}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="expMonth">Month</Label>
+                        <Input
+                          id="expMonth"
+                          name="expMonth"
+                          placeholder="12"
+                          maxLength={2}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="expYear">Year</Label>
+                        <Input
+                          id="expYear"
+                          name="expYear"
+                          placeholder="2025"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cvv">CVV</Label>
+                        <Input
+                          id="cvv"
+                          name="cvv"
+                          placeholder="123"
+                          maxLength={4}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="bank" className="space-y-6 mt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="bankName">Bank Name (Optional)</Label>
+                      <Input
+                        id="bankName"
+                        name="bankName"
+                        placeholder="First National Bank"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accountType">Account Type</Label>
+                      <Select name="accountType">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select account type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="checking">Checking</SelectItem>
+                          <SelectItem value="savings">Savings</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="routingNumber">Routing Number</Label>
+                        <Input
+                          id="routingNumber"
+                          name="routingNumber"
+                          placeholder="111000025"
+                          maxLength={9}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="accountNumber">Account Number</Label>
+                        <Input
+                          id="accountNumber"
+                          name="accountNumber"
+                          placeholder="123456789"
+                          maxLength={17}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="nameOnAccount">Name on Account</Label>
+                      <Input
+                        id="nameOnAccount"
+                        name="nameOnAccount"
+                        placeholder="John Doe"
+                      />
+                    </div>
+
+                    <Alert>
+                      <Landmark className="h-4 w-4" />
+                      <AlertDescription>
+                        ACH payments typically take 1-3 business days to process. Use test routing number 111000025 for testing.
+                      </AlertDescription>
+                    </Alert>
+                  </TabsContent>
+                </Tabs>
 
                 <Button 
                   type="submit" 
                   className="w-full shadow-button"
                   disabled={!isAcceptJSLoaded}
                 >
-                  Generate Payment Token
+                  Generate {paymentType === 'card' ? 'Card' : 'Bank'} Payment Token
                 </Button>
                 
                 {!isAcceptJSLoaded && (
