@@ -143,7 +143,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     button.setAttribute('data-clientKey', config.clientKey);
     button.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
     button.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
-    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
+    button.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": true}');
     button.setAttribute('data-responseHandler', 'acceptUIResponseHandler');
     
     buttonContainerRef.current.appendChild(button);
@@ -159,7 +159,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
       btn.setAttribute('data-clientKey', authConfig.clientKey);
       btn.setAttribute('data-acceptUIFormBtnTxt', 'Complete Payment');
       btn.setAttribute('data-acceptUIFormHeaderTxt', 'Payment Information');
-      btn.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": false}');
+      btn.setAttribute('data-paymentOptions', '{"showCreditCard": true, "showBankAccount": true}');
       btn.setAttribute('data-responseHandler', 'acceptUIResponseHandler');
       
       console.log('AcceptUI v3 button attributes set:', {
@@ -499,7 +499,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                        data-clientkey={authConfig.clientKey}
                        data-acceptuiformbtntxt="Complete Payment"
                        data-acceptuiformheadertxt="Payment Information"
-                       data-paymentoptions='{"showCreditCard": true, "showBankAccount": false}'
+                       data-paymentoptions='{"showCreditCard": true, "showBankAccount": true}'
                        data-responsehandler="acceptUIResponseHandler"
                      >
                        Open AcceptUI v3 Lightbox Payment
