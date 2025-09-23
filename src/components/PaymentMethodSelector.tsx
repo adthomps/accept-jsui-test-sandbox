@@ -7,7 +7,6 @@ import { Shield, Code, Globe, ArrowRight, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
-import AcceptUIFormV2 from './AcceptUIFormV2';
 import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
@@ -18,11 +17,7 @@ const PaymentMethodSelector = () => {
     return <PaymentForm onBack={() => setSelectedMethod(null)} />;
   }
 
-  if (selectedMethod === 'acceptui-v2') {
-    return <AcceptUIFormV2 onBack={() => setSelectedMethod(null)} />;
-  }
-
-  if (selectedMethod === 'acceptui-v3') {
+  if (selectedMethod === 'acceptui') {
     return <AcceptUIForm onBack={() => setSelectedMethod(null)} />;
   }
 
@@ -41,6 +36,16 @@ const PaymentMethodSelector = () => {
     return <SIMForm onBack={() => setSelectedMethod(null)} />;
   }
 
+  if (selectedMethod === 'acceptcustomer') {
+    toast({
+      title: "Feature Coming Soon",
+      description: "Accept Customer integration will be available in a future update.",
+      variant: "default"
+    });
+    setSelectedMethod(null);
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -53,7 +58,7 @@ const PaymentMethodSelector = () => {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Choose between AcceptJS and AcceptUI integration methods to test secure payment processing
+            Test different Authorize.Net integration methods for secure payment processing
           </p>
           <Badge variant="secondary" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -63,17 +68,16 @@ const PaymentMethodSelector = () => {
 
         {/* Method Comparison */}
         <Tabs defaultValue="comparison" className="w-full max-w-6xl">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="comparison">Compare Methods</TabsTrigger>
             <TabsTrigger value="acceptjs">AcceptJS Details</TabsTrigger>
-            <TabsTrigger value="acceptui-v2">AcceptUI v2 Details</TabsTrigger>
-            <TabsTrigger value="acceptui-v3">AcceptUI v3 Details</TabsTrigger>
+            <TabsTrigger value="acceptui">AcceptUI Details</TabsTrigger>
             <TabsTrigger value="accepthosted">Accept Hosted Details</TabsTrigger>
             <TabsTrigger value="sim">SIM (Legacy) Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="comparison" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -116,79 +120,39 @@ const PaymentMethodSelector = () => {
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    Accept UI v2
-                    <Badge variant="outline">Enhanced AcceptJS</Badge>
+                    AcceptUI
+                    <Badge variant="secondary">Hosted Forms</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Enhanced AcceptJS using v2/Accept.js with improved UX
+                    Iframe-based hosted payment forms with complete PCI compliance
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Enhanced AcceptJS tokenization</li>
-                      <li>• Improved response processing</li>
-                      <li>• Modern styling and animations</li>
-                      <li>• Dynamic auth configuration</li>
+                      <li>• Iframe-based hosted forms</li>
+                      <li>• SAQ A PCI compliance</li>
+                      <li>• Modal overlay UI</li>
+                      <li>• Mobile optimized</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Improved AcceptJS experience</li>
-                      <li>• Enhanced error handling</li>
-                      <li>• Better response feedback</li>
+                      <li>• Quick integration</li>
+                      <li>• Minimal PCI scope</li>
+                      <li>• Hosted payment UI</li>
                     </ul>
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button 
-                    onClick={() => setSelectedMethod('acceptui-v2')}
+                    onClick={() => setSelectedMethod('acceptui')}
                     className="w-full"
                     variant="outline"
                   >
-                    Test AcceptUI v2
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="border-primary/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Accept UI v3
-                    <Badge variant="outline">Experimental</Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Testing v3/AcceptUI.js library with API research
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Key Features:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• v3/AcceptUI.js library testing</li>
-                      <li>• API method discovery</li>
-                      <li>• Experimental implementation</li>
-                      <li>• Enhanced response processing</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Best For:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• API research and testing</li>
-                      <li>• v3 library exploration</li>
-                      <li>• Method compatibility testing</li>
-                    </ul>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    onClick={() => setSelectedMethod('acceptui-v3')}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    Test AcceptUI v3
+                    Test AcceptUI
                   </Button>
                 </CardFooter>
               </Card>
@@ -230,6 +194,47 @@ const PaymentMethodSelector = () => {
                     disabled
                   >
                     Requires Backend
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Accept Customer
+                    <Badge variant="outline">Coming Soon</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Customer Information Manager API for storing payment methods
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Key Features:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Store customer payment methods</li>
+                      <li>• Tokenized payment profiles</li>
+                      <li>• Recurring billing support</li>
+                      <li>• PCI-compliant storage</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Best For:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Subscription services</li>
+                      <li>• Repeat customers</li>
+                      <li>• Saved payment methods</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    onClick={() => setSelectedMethod('acceptcustomer')}
+                    className="w-full"
+                    variant="outline"
+                    disabled
+                  >
+                    Coming Soon
                   </Button>
                 </CardFooter>
               </Card>
@@ -322,43 +327,35 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>AcceptUI Technical Details</CardTitle>
                 <CardDescription>
-                  Understanding the AcceptUI hosted form options and integration
+                  Understanding the AcceptUI hosted form implementation and workflow
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h3 className="font-semibold">Redirect Method</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Full page redirect</li>
-                      <li>Authorize.Net handles everything</li>
-                      <li>Customer returns after payment</li>
-                      <li>Highest security level</li>
-                    </ul>
+                    <h3 className="font-semibold">Implementation Steps</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Load AcceptUI v3 library from Authorize.Net</li>
+                      <li>Create button with AcceptUI class</li>
+                      <li>Configure data attributes for form</li>
+                      <li>Handle response in callback function</li>
+                      <li>Process token on your server</li>
+                    </ol>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="font-semibold">Embedded Method</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Iframe within your page</li>
-                      <li>Seamless user experience</li>
-                      <li>Maintain brand consistency</li>
-                      <li>Still fully PCI compliant</li>
-                    </ul>
-                  </div>
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Lightbox Method</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Modal popup overlay</li>
-                      <li>Modern user interface</li>
-                      <li>Quick checkout flow</li>
-                      <li>Mobile optimized</li>
+                    <h3 className="font-semibold">Security Features</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Iframe-based hosted forms</li>
+                      <li>SAQ A PCI compliance</li>
+                      <li>No sensitive data handling</li>
+                      <li>Modal overlay interface</li>
                     </ul>
                   </div>
                 </div>
                 
                 <Button
                   onClick={() => setSelectedMethod('acceptui')}
-                  className="w-full shadow-button bg-gradient-primary"
+                  className="w-full shadow-button"
                 >
                   Start AcceptUI Testing
                 </Button>
@@ -380,9 +377,9 @@ const PaymentMethodSelector = () => {
               <div className="space-y-3">
                 <h3 className="font-semibold">Test Credentials Needed</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>API Login ID (for both methods)</li>
-                  <li>Transaction Key (AcceptUI)</li>
-                  <li>Client Key (AcceptJS)</li>
+                  <li>API Login ID (for all methods)</li>
+                  <li>Client Key (AcceptJS & AcceptUI)</li>
+                  <li>Transaction Key (server-side processing)</li>
                   <li>Sandbox account from Authorize.Net</li>
                 </ul>
               </div>
