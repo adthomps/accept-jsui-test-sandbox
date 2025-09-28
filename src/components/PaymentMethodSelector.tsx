@@ -7,6 +7,7 @@ import { Shield, Code, Globe, ArrowRight, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
+import AcceptHostedForm from './AcceptHostedForm';
 import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
@@ -22,14 +23,7 @@ const PaymentMethodSelector = () => {
   }
 
   if (selectedMethod === 'accepthosted') {
-    // Accept Hosted requires backend integration - show message
-    toast({
-      title: "Backend Required",
-      description: "Accept Hosted requires server-side integration. Connect to Supabase to implement this feature.",
-      variant: "destructive"
-    });
-    setSelectedMethod(null);
-    return null;
+    return <AcceptHostedForm onBack={() => setSelectedMethod(null)} />;
   }
 
   if (selectedMethod === 'sim') {

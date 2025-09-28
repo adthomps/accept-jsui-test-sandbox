@@ -20,6 +20,8 @@ interface HostedTokenRequest {
   };
   returnUrl?: string;
   cancelUrl?: string;
+  existingCustomerEmail?: string;
+  createProfile?: boolean;
 }
 
 serve(async (req) => {
@@ -36,7 +38,37 @@ serve(async (req) => {
   }
 
   try {
-    const { customerInfo, returnUrl, cancelUrl }: HostedTokenRequest = await req.json();
+    const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile }: HostedTokenRequest = await req.json();
+
+    // Initialize Supabase client for customer profile lookup
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    let customerProfileId: string | null = null;
+    
+    // Look up existing customer profile if email provided
+    if (existingCustomerEmail && supabaseUrl && supabaseServiceKey) {
+      try {
+        const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=authorize_net_customer_profile_id`, {
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (supabaseResponse.ok) {
+          const profiles = await supabaseResponse.json();
+          if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
+            customerProfileId = profiles[0].authorize_net_customer_profile_id;
+            console.log(`Found existing customer profile: ${customerProfileId}`);
+          }
+        }
+      } catch (error) {
+        console.warn('Error looking up customer profile:', error);
+        // Continue without profile ID
+      }
+    }
 
     const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
     const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
@@ -46,7 +78,7 @@ serve(async (req) => {
     }
 
     // Create hosted payment page token request
-    const tokenRequest = {
+    const tokenRequest: any = {
       getHostedPaymentPageRequest: {
         merchantAuthentication: {
           name: apiLoginId,
@@ -74,28 +106,55 @@ serve(async (req) => {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
                 showReceipt: true,
-                url: returnUrl || window.location.origin,
+                url: returnUrl || `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/functions/v1/accept-hosted-return`,
                 urlText: "Continue",
-                cancelUrl: cancelUrl || window.location.origin,
+                cancelUrl: cancelUrl || `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/functions/v1/accept-hosted-return?cancelled=true`,
                 cancelUrlText: "Cancel"
               })
             },
             {
               settingName: "hostedPaymentButtonOptions",
               settingValue: JSON.stringify({
-                text: "Pay"
+                text: "Complete Payment"
               })
             },
             {
               settingName: "hostedPaymentStyleOptions",
               settingValue: JSON.stringify({
-                bgColor: "blue"
+                bgColor: "#3b82f6"
+              })
+            },
+            {
+              settingName: "hostedPaymentPaymentOptions",
+              settingValue: JSON.stringify({
+                showCreditCard: true,
+                showBankAccount: true
+              })
+            },
+            {
+              settingName: "hostedPaymentBillingAddressOptions", 
+              settingValue: JSON.stringify({
+                show: true,
+                required: false
+              })
+            },
+            {
+              settingName: "hostedPaymentCustomerOptions",
+              settingValue: JSON.stringify({
+                showEmail: true,
+                requiredEmail: true,
+                addPaymentProfile: createProfile || false
               })
             }
           ]
         }
       },
     };
+
+    // Add customer profile ID if found
+    if (customerProfileId) {
+      tokenRequest.getHostedPaymentPageRequest.customerProfileId = customerProfileId;
+    }
 
     // Send request to Authorize.Net
     const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
@@ -139,7 +198,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Internal server error',
+      error: (error as Error)?.message || 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
