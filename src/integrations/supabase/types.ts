@@ -65,6 +65,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          account_number: string | null
+          account_type: string | null
+          amount: number | null
+          auth_code: string | null
+          created_at: string
+          customer_email: string | null
+          customer_payment_profile_id: string | null
+          customer_profile_id: string | null
+          id: string
+          payment_method: string | null
+          raw_response: Json | null
+          response_code: string | null
+          status: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string | null
+          amount?: number | null
+          auth_code?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_payment_profile_id?: string | null
+          customer_profile_id?: string | null
+          id?: string
+          payment_method?: string | null
+          raw_response?: Json | null
+          response_code?: string | null
+          status: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string | null
+          amount?: number | null
+          auth_code?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_payment_profile_id?: string | null
+          customer_profile_id?: string | null
+          id?: string
+          payment_method?: string | null
+          raw_response?: Json | null
+          response_code?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

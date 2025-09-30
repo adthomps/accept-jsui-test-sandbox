@@ -1,21 +1,33 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createHash, createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-anet-signature',
 };
 
-function verifyWebhookSignature(payload: string, signature: string, signatureKey: string): boolean {
+async function verifyWebhookSignature(payload: string, signature: string, signatureKey: string): Promise<boolean> {
   try {
     // Remove the "sha512=" prefix if present
     const cleanSignature = signature.replace(/^sha512=/, '').toUpperCase();
     
-    // Create HMAC-SHA512 hash
-    const hmac = createHmac("sha512", new TextEncoder().encode(signatureKey));
-    hmac.update(new TextEncoder().encode(payload));
-    const computedHash = Array.from(hmac.digest())
-      .map(b => b.toString(16).padStart(2, '0'))
+    // Create HMAC-SHA512 hash using Web Crypto API
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(signatureKey),
+      { name: 'HMAC', hash: 'SHA-512' },
+      false,
+      ['sign']
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(payload)
+    );
+    
+    const computedHash = Array.from(new Uint8Array(signatureBuffer))
+      .map((b: number) => b.toString(16).padStart(2, '0'))
       .join('')
       .toUpperCase();
     
@@ -142,7 +154,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Internal server error',
+      error: (error as Error)?.message || 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

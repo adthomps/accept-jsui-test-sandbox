@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,20 +22,18 @@ serve(async (req) => {
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': `${url.origin}/?payment=cancelled`,
+          'Location': `/payment-result?status=cancelled`,
           ...corsHeaders
         }
       });
     }
 
     // Extract return parameters from Authorize.Net
-    const transId = url.searchParams.get('transId');
+    const transactionId = url.searchParams.get('transId');
     const responseCode = url.searchParams.get('responseCode');
-    const messageCode = url.searchParams.get('messageCode');
-    const description = url.searchParams.get('description');
+    const responseReasonCode = url.searchParams.get('messageCode');
+    const responseReasonText = url.searchParams.get('description');
     const authCode = url.searchParams.get('authCode');
-    const avsResponse = url.searchParams.get('avsResponse');
-    const cvvResponse = url.searchParams.get('cvvResponse');
     const amount = url.searchParams.get('amount');
     const accountNumber = url.searchParams.get('accountNumber');
     const accountType = url.searchParams.get('accountType');
@@ -42,13 +41,11 @@ serve(async (req) => {
     const customerPaymentProfileId = url.searchParams.get('customerPaymentProfileId');
 
     console.log('Accept Hosted Return Parameters:', {
-      transId,
+      transactionId,
       responseCode,
-      messageCode,
-      description,
+      responseReasonCode,
+      responseReasonText,
       authCode,
-      avsResponse,
-      cvvResponse,
       amount,
       accountNumber,
       accountType,
@@ -56,62 +53,107 @@ serve(async (req) => {
       customerPaymentProfileId
     });
 
-    // Determine if payment was successful
-    const isSuccess = responseCode === '1'; // 1 = Approved
-    
-    // Store customer profile information if provided
-    if (isSuccess && customerProfileId && customerPaymentProfileId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (supabaseUrl && supabaseServiceKey) {
-        try {
-          // Update or create customer profile record
-          const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-              'apikey': supabaseServiceKey,
-              'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates'
-            },
-            body: JSON.stringify({
-              authorize_net_customer_profile_id: customerProfileId,
-              last_used_at: new Date().toISOString()
-            })
+    // Determine payment status
+    let status = 'error';
+    if (responseCode === '1') {
+      status = 'approved';
+    } else if (responseCode === '2') {
+      status = 'declined';
+    } else if (responseCode === '3') {
+      status = 'error';
+    }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = supabaseUrl && supabaseServiceKey
+      ? createClient(supabaseUrl, supabaseServiceKey)
+      : null;
+
+    // Store transaction in database
+    if (supabase && transactionId) {
+      try {
+        const { error: insertError } = await supabase
+          .from('payment_transactions')
+          .insert({
+            transaction_id: transactionId,
+            response_code: responseCode,
+            auth_code: authCode,
+            amount: amount ? parseFloat(amount) : null,
+            payment_method: accountType,
+            account_number: accountNumber,
+            account_type: accountType,
+            customer_profile_id: customerProfileId,
+            customer_payment_profile_id: customerPaymentProfileId,
+            customer_email: url.searchParams.get('email'),
+            status: status,
+            raw_response: {
+              responseCode,
+              responseReasonCode,
+              responseReasonText,
+              authCode,
+              transactionId,
+              accountNumber,
+              accountType,
+              customerProfileId,
+              customerPaymentProfileId
+            }
           });
-          
-          if (supabaseResponse.ok) {
-            console.log('Customer profile updated successfully');
-          } else {
-            console.warn('Failed to update customer profile:', await supabaseResponse.text());
-          }
-        } catch (error) {
-          console.warn('Error updating customer profile:', error);
+
+        if (insertError) {
+          console.error('Error storing transaction:', insertError);
+        } else {
+          console.log('Transaction stored successfully:', transactionId);
         }
+      } catch (error) {
+        console.error('Error storing transaction:', error);
+      }
+    }
+    
+    // Update customer profile if payment was successful
+    if (status === 'approved' && customerProfileId && supabase) {
+      try {
+        const customerEmail = url.searchParams.get('email');
+        
+        const updateData: any = {
+          authorize_net_customer_profile_id: customerProfileId,
+          last_used_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await supabase
+          .from('customer_profiles')
+          .update(updateData)
+          .eq('email', customerEmail || '');
+
+        if (updateError) {
+          console.error('Error updating customer profile:', updateError);
+        } else {
+          console.log('Updated customer profile successfully');
+        }
+      } catch (error) {
+        console.error('Error updating customer profile:', error);
       }
     }
 
-    // Construct return URL with transaction details
+    // Construct return parameters
     const returnParams = new URLSearchParams({
-      payment: isSuccess ? 'success' : 'failed',
-      ...(transId && { transactionId: transId }),
-      ...(responseCode && { responseCode }),
-      ...(messageCode && { messageCode }),
-      ...(description && { description }),
-      ...(authCode && { authCode }),
-      ...(avsResponse && { avsResponse }),
-      ...(cvvResponse && { cvvResponse }),
-      ...(amount && { amount }),
-      ...(accountNumber && { accountNumber }),
-      ...(accountType && { accountType })
+      status: status,
+      transactionId: transactionId || '',
+      responseCode: responseCode || '',
+      authCode: authCode || '',
+      amount: amount || '',
+      accountNumber: accountNumber || '',
+      accountType: accountType || '',
+      customerProfileId: customerProfileId || '',
+      customerPaymentProfileId: customerPaymentProfileId || '',
+      responseText: responseReasonText || ''
     });
 
-    // Redirect back to frontend with results
+    // Redirect back to frontend payment result page
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': `${url.origin}/?${returnParams.toString()}`,
+        'Location': `/payment-result?${returnParams.toString()}`,
         ...corsHeaders
       }
     });
@@ -120,11 +162,10 @@ serve(async (req) => {
     console.error('Accept Hosted return handler error:', error);
     
     // Redirect to frontend with error status
-    const url = new URL(req.url);
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': `${url.origin}/?payment=error`,
+        'Location': `/payment-result?status=error`,
         ...corsHeaders
       }
     });

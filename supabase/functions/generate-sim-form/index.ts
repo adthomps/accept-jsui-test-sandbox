@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createHash } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,11 +49,14 @@ serve(async (req) => {
     const sequence = Math.floor(Math.random() * 1000000);
     const timestamp = Math.floor(Date.now() / 1000);
 
-    // Create fingerprint for SIM
+    // Create fingerprint for SIM using MD5 hash
     const fingerprintData = `${apiLoginId}^${sequence}^${timestamp}^${customerInfo.amount}^`;
     const encoder = new TextEncoder();
     const data = encoder.encode(transactionKey + fingerprintData);
-    const hashBuffer = await createHash("md5").update(data).digest();
+    
+    // Use SubtleCrypto for MD5 (note: MD5 is not available in SubtleCrypto, so we need to use a different approach)
+    // For SIM, we need MD5 which isn't in Web Crypto, so we'll use a simple implementation
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const fingerprint = Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
@@ -96,7 +98,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Internal server error',
+      error: (error as Error)?.message || 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

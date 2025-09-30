@@ -106,9 +106,9 @@ serve(async (req) => {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
                 showReceipt: true,
-                url: returnUrl || `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/functions/v1/accept-hosted-return`,
+                url: returnUrl || `https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return`,
                 urlText: "Continue",
-                cancelUrl: cancelUrl || `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/functions/v1/accept-hosted-return?cancelled=true`,
+                cancelUrl: cancelUrl || `https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return?cancelled=true`,
                 cancelUrlText: "Cancel"
               })
             },
