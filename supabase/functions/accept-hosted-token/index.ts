@@ -38,7 +38,16 @@ serve(async (req) => {
   }
 
   try {
-    const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile }: HostedTokenRequest = await req.json();
+    const requestBody: HostedTokenRequest = await req.json();
+    console.log('Received request:', JSON.stringify({
+      ...requestBody,
+      customerInfo: {
+        ...requestBody.customerInfo,
+        email: requestBody.customerInfo.email ? '[REDACTED]' : undefined
+      }
+    }, null, 2));
+
+    const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile } = requestBody;
 
     // Initialize Supabase client for customer profile lookup
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -49,6 +58,7 @@ serve(async (req) => {
     // Look up existing customer profile if email provided
     if (existingCustomerEmail && supabaseUrl && supabaseServiceKey) {
       try {
+        console.log('Looking up existing customer profile for:', existingCustomerEmail);
         const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=authorize_net_customer_profile_id`, {
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -62,7 +72,11 @@ serve(async (req) => {
           if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
             customerProfileId = profiles[0].authorize_net_customer_profile_id;
             console.log(`Found existing customer profile: ${customerProfileId}`);
+          } else {
+            console.log('No existing customer profile found');
           }
+        } else {
+          console.warn('Supabase profile lookup failed:', supabaseResponse.status, await supabaseResponse.text());
         }
       } catch (error) {
         console.warn('Error looking up customer profile:', error);
@@ -157,6 +171,14 @@ serve(async (req) => {
       tokenRequest.getHostedPaymentPageRequest.customerProfileId = customerProfileId;
     }
 
+    console.log('Sending request to Authorize.Net with:', {
+      url: 'https://apitest.authorize.net/xml/v1/request.api',
+      refId: tokenRequest.getHostedPaymentPageRequest.refId,
+      transactionType: tokenRequest.getHostedPaymentPageRequest.transactionRequest.transactionType,
+      amount: tokenRequest.getHostedPaymentPageRequest.transactionRequest.amount,
+      customerProfileId: customerProfileId || 'none'
+    });
+
     // Send request to Authorize.Net
     const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
       method: 'POST',
@@ -171,23 +193,41 @@ serve(async (req) => {
     console.log('Accept Hosted Token Response:', JSON.stringify(result, null, 2));
 
     if (result.getHostedPaymentPageResponse?.messages?.resultCode === 'Ok') {
+      const token = result.getHostedPaymentPageResponse.token;
+      const hostedPaymentUrl = `https://test.authorize.net/payment/payment?token=${token}`;
+      
+      console.log('Payment token generated successfully');
+      
       return new Response(JSON.stringify({
         success: true,
-        token: result.getHostedPaymentPageResponse.token,
-        // The hosted payment URL would be constructed like:
-        // https://test.authorize.net/payment/payment (for sandbox)
-        // https://accept.authorize.net/payment/payment (for production)
-        hostedPaymentUrl: `https://test.authorize.net/payment/payment?token=${result.getHostedPaymentPageResponse.token}`,
+        token: token,
+        hostedPaymentUrl: hostedPaymentUrl,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      const errorMessage = result.getHostedPaymentPageResponse?.messages?.message?.[0]?.text ||
-                          'Failed to generate hosted payment token';
+      const messages = result.getHostedPaymentPageResponse?.messages || result.messages || {};
+      const errorMessages = messages.message || [];
+      const firstError = errorMessages[0];
+      
+      const errorText = firstError?.text || 'Failed to generate hosted payment token';
+      const errorCode = firstError?.code || 'UNKNOWN';
+      
+      console.error('Authorize.Net API Error:', {
+        resultCode: messages.resultCode,
+        errorCode,
+        errorText,
+        fullResponse: result
+      });
       
       return new Response(JSON.stringify({
         success: false,
-        error: errorMessage,
+        error: `${errorText} (Code: ${errorCode})`,
+        details: {
+          resultCode: messages.resultCode,
+          errorCode,
+          errorText
+        }
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -197,9 +237,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('Accept Hosted token generation error:', error);
     
+    let errorMessage = 'Internal server error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
     return new Response(JSON.stringify({
       success: false,
-      error: (error as Error)?.message || 'Internal server error',
+      error: errorMessage,
+      details: {
+        type: 'server_error',
+        timestamp: new Date().toISOString()
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

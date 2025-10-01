@@ -115,6 +115,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     setIsProcessing(true);
 
     try {
+      console.log('Submitting hosted payment request...');
+      
       const { data, error } = await supabase.functions.invoke('accept-hosted-token', {
         body: {
           customerInfo: {
@@ -136,11 +138,19 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
-        throw new Error(error.message);
+        console.error('Supabase function invocation error:', error);
+        throw new Error(`API Error: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No response data received from payment service');
       }
 
       if (data.success) {
+        console.log('Payment token generated successfully, redirecting...');
         toast({
           title: "Redirecting to Payment",
           description: "Opening Authorize.Net hosted payment page...",
@@ -149,17 +159,32 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         // Redirect to hosted payment page
         window.location.href = data.hostedPaymentUrl;
       } else {
+        console.error('Payment token generation failed:', data);
         toast({
-          title: "Token Generation Failed",
-          description: data.error || "Failed to generate payment token",
+          title: "Payment Token Generation Failed",
+          description: data.error || "Failed to generate payment token. Please check your information and try again.",
           variant: "destructive"
         });
       }
     } catch (error: any) {
       console.error('Accept Hosted token error:', error);
+      
+      let errorMessage = "Failed to initialize payment. Please try again.";
+      
+      // Enhanced error message handling
+      if (error.message) {
+        if (error.message.includes('Edge Function returned a non-2xx status code')) {
+          errorMessage = "Payment service error. Please check the console for details and try again.";
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to initialize payment",
+        title: "Payment Initialization Error",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
