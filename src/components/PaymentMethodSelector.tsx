@@ -185,9 +185,8 @@ const PaymentMethodSelector = () => {
                     onClick={() => setSelectedMethod('accepthosted')}
                     className="w-full"
                     variant="outline"
-                    disabled
                   >
-                    Requires Backend
+                    Test Accept Hosted
                   </Button>
                 </CardFooter>
               </Card>
@@ -352,6 +351,47 @@ const PaymentMethodSelector = () => {
                   className="w-full shadow-button"
                 >
                   Start AcceptUI Testing
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="accepthosted" className="space-y-6">
+            <Card className="shadow-card bg-gradient-card">
+              <CardHeader>
+                <CardTitle>Accept Hosted Technical Details</CardTitle>
+                <CardDescription>
+                  Understanding the Accept Hosted Payment implementation and workflow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Implementation Steps</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Generate payment token via server API</li>
+                      <li>Redirect customer to Authorize.Net hosted page</li>
+                      <li>Customer completes payment on secure form</li>
+                      <li>Authorize.Net processes transaction</li>
+                      <li>Customer redirected back with results</li>
+                    </ol>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Security Features</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Fully hosted payment pages</li>
+                      <li>PCI DSS Level 1 compliant</li>
+                      <li>Customer profile management</li>
+                      <li>Webhook integration support</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => setSelectedMethod('accepthosted')}
+                  className="w-full shadow-button"
+                >
+                  Start Accept Hosted Testing
                 </Button>
               </CardContent>
             </Card>

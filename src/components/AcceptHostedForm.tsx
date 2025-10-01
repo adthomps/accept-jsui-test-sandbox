@@ -131,8 +131,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           },
           existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
           createProfile: createProfile,
-          returnUrl: `${window.location.origin}/?payment=success`,
-          cancelUrl: `${window.location.origin}/?payment=cancelled`
+          returnUrl: 'https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return',
+          cancelUrl: 'https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return'
         }
       });
 
