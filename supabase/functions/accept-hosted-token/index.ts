@@ -88,6 +88,9 @@ serve(async (req) => {
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: customerInfo.amount.toString(),
+          customer: {
+            email: customerInfo.email,
+          },
           billTo: {
             firstName: customerInfo.firstName,
             lastName: customerInfo.lastName,
@@ -96,9 +99,6 @@ serve(async (req) => {
             state: customerInfo.state,
             zip: customerInfo.zipCode,
             country: customerInfo.country,
-          },
-          customer: {
-            email: customerInfo.email,
           },
         },
         hostedPaymentSettings: {
