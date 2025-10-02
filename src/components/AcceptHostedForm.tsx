@@ -133,8 +133,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           },
           existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
           createProfile: createProfile,
-          returnUrl: 'https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return',
-          cancelUrl: 'https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return'
+          returnUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
+          cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/'
         }
       });
 
