@@ -122,9 +122,9 @@ serve(async (req) => {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
                 showReceipt: true,
-                url: returnUrl || `https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return`,
+                url: returnUrl || `https://accept-jsui-test-sandbox.lovable.app/`,
                 urlText: "Continue",
-                cancelUrl: cancelUrl || `https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/accept-hosted-return?cancelled=true`,
+                cancelUrl: cancelUrl || `https://accept-jsui-test-sandbox.lovable.app/`,
                 cancelUrlText: "Cancel"
               })
             },
