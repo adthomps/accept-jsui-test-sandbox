@@ -190,49 +190,66 @@ serve(async (req) => {
 
     const result = await response.json();
 
-    console.log('Accept Hosted Token Response:', JSON.stringify(result, null, 2));
+    // Normalize Authorize.Net response shape (some SDKs return nested under getHostedPaymentPageResponse, others return the object directly)
+    const root = result?.getHostedPaymentPageResponse ?? result;
+    console.log('Accept Hosted Token Response (normalized):', JSON.stringify(root, null, 2));
 
-    if (result.getHostedPaymentPageResponse?.messages?.resultCode === 'Ok') {
-      const token = result.getHostedPaymentPageResponse.token;
+    const messages = root?.messages;
+
+    // Treat explicit success with token as 200 OK
+    if (messages?.resultCode === 'Ok' && typeof root?.token === 'string' && root.token.length > 0) {
+      const token = root.token as string;
       const hostedPaymentUrl = `https://test.authorize.net/payment/payment?token=${token}`;
-      
+
       console.log('Payment token generated successfully');
-      
+
       return new Response(JSON.stringify({
         success: true,
-        token: token,
-        hostedPaymentUrl: hostedPaymentUrl,
+        token,
+        hostedPaymentUrl,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } else {
-      const messages = result.getHostedPaymentPageResponse?.messages || result.messages || {};
-      const errorMessages = messages.message || [];
-      const firstError = errorMessages[0];
-      
-      const errorText = firstError?.text || 'Failed to generate hosted payment token';
-      const errorCode = firstError?.code || 'UNKNOWN';
-      
-      console.error('Authorize.Net API Error:', {
-        resultCode: messages.resultCode,
-        errorCode,
-        errorText,
-        fullResponse: result
-      });
-      
-      return new Response(JSON.stringify({
-        success: false,
-        error: `${errorText} (Code: ${errorCode})`,
-        details: {
-          resultCode: messages.resultCode,
-          errorCode,
-          errorText
-        }
-      }), {
-        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Build detailed error from messages, preferring non-informational codes
+    let errorCode = 'UNKNOWN';
+    let errorText = 'Failed to generate hosted payment token';
+
+    if (messages?.message && Array.isArray(messages.message)) {
+      const nonInfo = messages.message.find((m: any) => typeof m?.code === 'string' && !m.code.startsWith('I'));
+      const first = nonInfo || messages.message[0];
+      if (first) {
+        errorCode = first.code ?? errorCode;
+        errorText = first.text ?? errorText;
+      }
+    }
+
+    // If the API reported Ok but no token was returned, surface a specific error
+    if (messages?.resultCode === 'Ok' && (!root?.token || String(root.token).length === 0)) {
+      errorCode = errorCode === 'UNKNOWN' ? 'NO_TOKEN' : errorCode;
+      errorText = 'Authorize.Net returned success but no token was provided';
+    }
+
+    console.error('Authorize.Net API error response:', {
+      resultCode: messages?.resultCode,
+      errorCode,
+      errorText,
+      fullResponse: result,
+    });
+
+    return new Response(JSON.stringify({
+      success: false,
+      error: `${errorText}${errorCode ? ` (Code: ${errorCode})` : ''}`,
+      details: {
+        resultCode: messages?.resultCode,
+        errorCode,
+        errorText,
+      },
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Accept Hosted token generation error:', error);
