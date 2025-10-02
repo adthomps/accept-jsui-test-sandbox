@@ -38,8 +38,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔵 Step 1: Received accept-hosted-token request');
     const requestBody: HostedTokenRequest = await req.json();
-    console.log('Received request:', JSON.stringify({
+    console.log('📦 Request payload:', JSON.stringify({
       ...requestBody,
       customerInfo: {
         ...requestBody.customerInfo,
@@ -58,7 +59,7 @@ serve(async (req) => {
     // Look up existing customer profile if email provided
     if (existingCustomerEmail && supabaseUrl && supabaseServiceKey) {
       try {
-        console.log('Looking up existing customer profile for:', existingCustomerEmail);
+        console.log('🔵 Step 2: Looking up existing customer profile for:', existingCustomerEmail);
         const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=authorize_net_customer_profile_id`, {
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -71,7 +72,7 @@ serve(async (req) => {
           const profiles = await supabaseResponse.json();
           if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
             customerProfileId = profiles[0].authorize_net_customer_profile_id;
-            console.log(`Found existing customer profile: ${customerProfileId}`);
+            console.log(`✅ Found existing customer profile: ${customerProfileId}`);
           } else {
             console.log('No existing customer profile found');
           }
@@ -171,12 +172,14 @@ serve(async (req) => {
       tokenRequest.getHostedPaymentPageRequest.customerProfileId = customerProfileId;
     }
 
-    console.log('Sending request to Authorize.Net with:', {
+    console.log('🔵 Step 3: Sending request to Authorize.Net API');
+    console.log('📤 API Request details:', {
       url: 'https://apitest.authorize.net/xml/v1/request.api',
       refId: tokenRequest.getHostedPaymentPageRequest.refId,
       transactionType: tokenRequest.getHostedPaymentPageRequest.transactionRequest.transactionType,
       amount: tokenRequest.getHostedPaymentPageRequest.transactionRequest.amount,
-      customerProfileId: customerProfileId || 'none'
+      customerProfileId: customerProfileId || 'none',
+      createProfile: createProfile || false
     });
 
     // Send request to Authorize.Net
@@ -188,25 +191,32 @@ serve(async (req) => {
       body: JSON.stringify(tokenRequest),
     });
 
+    console.log('🔵 Step 4: Received response from Authorize.Net');
     const result = await response.json();
 
     // Normalize Authorize.Net response shape (some SDKs return nested under getHostedPaymentPageResponse, others return the object directly)
     const root = result?.getHostedPaymentPageResponse ?? result;
-    console.log('Accept Hosted Token Response (normalized):', JSON.stringify(root, null, 2));
+    console.log('📥 Authorize.Net response (normalized):', JSON.stringify({
+      resultCode: root?.messages?.resultCode,
+      messageCode: root?.messages?.message?.[0]?.code,
+      messageText: root?.messages?.message?.[0]?.text,
+      hasToken: !!root?.token,
+      tokenLength: root?.token?.length || 0
+    }, null, 2));
 
     const messages = root?.messages;
 
     // Treat explicit success with token as 200 OK
     if (messages?.resultCode === 'Ok' && typeof root?.token === 'string' && root.token.length > 0) {
       const token = root.token as string;
-      const hostedPaymentUrl = `https://test.authorize.net/payment/payment?token=${token}`;
 
-      console.log('Payment token generated successfully');
+      console.log('✅ Step 5: Payment token generated successfully');
+      console.log('📝 Token length:', token.length, 'characters');
+      console.log('🎯 Client should POST this token to: https://test.authorize.net/payment/payment');
 
       return new Response(JSON.stringify({
         success: true,
         token,
-        hostedPaymentUrl,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -231,11 +241,13 @@ serve(async (req) => {
       errorText = 'Authorize.Net returned success but no token was provided';
     }
 
-    console.error('Authorize.Net API error response:', {
+    console.error('❌ Step 5: Authorize.Net API returned error');
+    console.error('🚨 Error details:', {
       resultCode: messages?.resultCode,
       errorCode,
       errorText,
-      fullResponse: result,
+      hasToken: !!root?.token,
+      tokenLength: root?.token?.length || 0
     });
 
     return new Response(JSON.stringify({

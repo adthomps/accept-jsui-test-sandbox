@@ -150,14 +150,36 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       }
 
       if (data.success) {
-        console.log('Payment token generated successfully, redirecting...');
+        console.log('✅ Payment token generated successfully');
+        console.log('🎫 Token:', data.token ? `${data.token.substring(0, 30)}...` : 'undefined');
+        
         toast({
           title: "Redirecting to Payment",
           description: "Opening Authorize.Net hosted payment page...",
         });
         
-        // Redirect to hosted payment page
-        window.location.href = data.hostedPaymentUrl;
+        console.log('🚀 Creating form to POST token to Authorize.Net...');
+        
+        // Create a form to POST the token (Authorize.Net requires POST, not GET)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://test.authorize.net/payment/payment';
+        form.style.display = 'none';
+        
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = 'token';
+        tokenInput.value = data.token;
+        
+        form.appendChild(tokenInput);
+        document.body.appendChild(form);
+        
+        console.log('📤 Submitting form to Authorize.Net hosted payment page...');
+        
+        // Submit the form after a small delay to ensure toast is visible
+        setTimeout(() => {
+          form.submit();
+        }, 500);
       } else {
         console.error('Payment token generation failed:', data);
         toast({
