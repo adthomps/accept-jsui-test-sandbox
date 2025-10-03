@@ -60,6 +60,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const [existingCustomerEmail, setExistingCustomerEmail] = useState('');
   const [createProfile, setCreateProfile] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
@@ -113,9 +114,10 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     }
 
     setIsProcessing(true);
+    setProcessingStep('Validating payment details...');
 
     try {
-      console.log('Submitting hosted payment request...');
+      console.log('🔵 Step 1: Submitting hosted payment request...');
       
       const { data, error } = await supabase.functions.invoke('accept-hosted-token', {
         body: {
@@ -138,7 +140,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         }
       });
 
-      console.log('Edge function response:', { data, error });
+      setProcessingStep('Generating secure payment token...');
+      console.log('🔵 Step 2: Edge function response:', { data, error });
 
       if (error) {
         console.error('Supabase function invocation error:', error);
@@ -150,15 +153,17 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       }
 
       if (data.success) {
-        console.log('✅ Payment token generated successfully');
+        setProcessingStep('Token generated successfully!');
+        console.log('✅ Step 3: Payment token generated successfully');
         console.log('🎫 Token:', data.token ? `${data.token.substring(0, 30)}...` : 'undefined');
         
+        setProcessingStep('Redirecting to secure payment page...');
         toast({
           title: "Redirecting to Payment",
           description: "Opening Authorize.Net hosted payment page...",
         });
         
-        console.log('🚀 Creating form to POST token to Authorize.Net...');
+        console.log('🚀 Step 4: Creating form to POST token to Authorize.Net...');
         
         // Create a form to POST the token (Authorize.Net requires POST, not GET)
         const form = document.createElement('form');
@@ -174,12 +179,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         form.appendChild(tokenInput);
         document.body.appendChild(form);
         
-        console.log('📤 Submitting form to Authorize.Net hosted payment page...');
+        console.log('📤 Step 5: Submitting form to Authorize.Net hosted payment page...');
         
-        // Submit the form after a small delay to ensure toast is visible
+        // Submit the form after a small delay to show processing state
         setTimeout(() => {
           form.submit();
-        }, 500);
+        }, 1000);
       } else {
         console.error('Payment token generation failed:', data);
         toast({
@@ -210,7 +215,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         variant: "destructive"
       });
     } finally {
-      setIsProcessing(false);
+      // Don't reset processing state here - user is being redirected
+      // setIsProcessing(false);
     }
   };
 
@@ -499,7 +505,10 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 onClick={handleSubmit}
               >
                 {isProcessing ? (
-                  'Generating Payment Token...'
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                    {processingStep || 'Processing...'}
+                  </div>
                 ) : (
                   <>
                     <ExternalLink className="h-4 w-4 mr-2" />

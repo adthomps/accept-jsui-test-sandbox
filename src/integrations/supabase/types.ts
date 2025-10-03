@@ -119,12 +119,84 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_payments: {
+        Row: {
+          amount: number
+          create_profile: boolean | null
+          created_at: string | null
+          customer_info: Json
+          expires_at: string | null
+          id: string
+          reference_id: string
+          used: boolean | null
+        }
+        Insert: {
+          amount: number
+          create_profile?: boolean | null
+          created_at?: string | null
+          customer_info: Json
+          expires_at?: string | null
+          id?: string
+          reference_id: string
+          used?: boolean | null
+        }
+        Update: {
+          amount?: number
+          create_profile?: boolean | null
+          created_at?: string | null
+          customer_info?: Json
+          expires_at?: string | null
+          id?: string
+          reference_id?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          event_type: string
+          id: string
+          notification_id: string | null
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          event_type: string
+          id?: string
+          notification_id?: string | null
+          payload: Json
+          processed?: boolean | null
+          processed_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          notification_id?: string | null
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_pending_payments: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

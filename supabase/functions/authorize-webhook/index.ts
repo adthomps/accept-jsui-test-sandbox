@@ -62,7 +62,7 @@ serve(async (req) => {
     const signature = req.headers.get('X-ANET-Signature');
     const signatureKey = Deno.env.get('AUTHORIZE_NET_SIGNATURE_KEY');
 
-    console.log('Received webhook:', {
+    console.log('🔵 Received webhook:', {
       hasSignature: !!signature,
       hasSignatureKey: !!signatureKey,
       payloadLength: payload.length,
@@ -70,15 +70,17 @@ serve(async (req) => {
 
     // Verify webhook signature if signature key is configured
     if (signatureKey && signature) {
-      if (!verifyWebhookSignature(payload, signature, signatureKey)) {
-        console.error('Webhook signature verification failed');
+      const isValid = await verifyWebhookSignature(payload, signature, signatureKey);
+      if (!isValid) {
+        console.error('❌ Webhook signature verification failed');
         return new Response(JSON.stringify({ error: 'Invalid signature' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      console.log('✅ Webhook signature verified');
     } else {
-      console.warn('Webhook signature verification skipped - missing signature or key');
+      console.warn('⚠️ Webhook signature verification skipped - missing signature or key');
     }
 
     // Parse webhook payload
@@ -93,7 +95,42 @@ serve(async (req) => {
       });
     }
 
-    console.log('Webhook data:', JSON.stringify(webhookData, null, 2));
+    console.log('📦 Webhook data:', JSON.stringify(webhookData, null, 2));
+
+    // Store webhook event in database for audit trail
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (supabaseUrl && supabaseServiceKey) {
+      try {
+        const webhookEventData = {
+          event_id: webhookData.eventId,
+          event_type: webhookData.eventType,
+          notification_id: webhookData.notificationId,
+          payload: webhookData,
+          processed: false
+        };
+        
+        const storeResponse = await fetch(`${supabaseUrl}/rest/v1/webhook_events`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(webhookEventData)
+        });
+        
+        if (storeResponse.ok) {
+          console.log('✅ Webhook event stored in database');
+        } else {
+          console.error('❌ Error storing webhook event:', storeResponse.status, await storeResponse.text());
+        }
+      } catch (error) {
+        console.error('❌ Error storing webhook event:', error);
+      }
+    }
 
     // Process different webhook event types
     const eventType = webhookData.eventType;
@@ -101,42 +138,132 @@ serve(async (req) => {
 
     switch (eventType) {
       case 'net.authorize.payment.authcapture.created':
-        console.log('Payment captured:', webhookData.payload);
-        // Here you would typically:
-        // 1. Update your database with the payment status
-        // 2. Send confirmation emails
-        // 3. Update order status
-        // 4. Trigger fulfillment processes
+        console.log('💳 Payment captured:', webhookData.payload);
+        // Transaction details from webhook
+        if (webhookData.payload && supabaseUrl && supabaseServiceKey) {
+          const payload = webhookData.payload;
+          try {
+            // Update transaction status in database
+            const updateResponse = await fetch(
+              `${supabaseUrl}/rest/v1/payment_transactions?transaction_id=eq.${payload.id}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                  'apikey': supabaseServiceKey,
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({
+                  status: 'approved',
+                  raw_response: payload
+                })
+              }
+            );
+            
+            if (updateResponse.ok) {
+              console.log('✅ Transaction updated in database');
+            } else {
+              console.error('❌ Error updating transaction:', updateResponse.status);
+            }
+          } catch (error) {
+            console.error('❌ Error processing payment captured webhook:', error);
+          }
+        }
         break;
         
       case 'net.authorize.payment.authorization.created':
-        console.log('Payment authorized:', webhookData.payload);
-        // Handle authorization-only transactions
-        break;
-        
-      case 'net.authorize.payment.capture.created':
-        console.log('Payment capture created:', webhookData.payload);
-        // Handle capture of previously authorized payment
+        console.log('🔐 Payment authorized:', webhookData.payload);
+        // Store authorization for later capture
         break;
         
       case 'net.authorize.payment.void.created':
-        console.log('Payment voided:', webhookData.payload);
-        // Handle voided transactions
+        console.log('🚫 Payment voided:', webhookData.payload);
+        // Update transaction status to voided
+        if (webhookData.payload && supabaseUrl && supabaseServiceKey) {
+          const payload = webhookData.payload;
+          try {
+            await fetch(
+              `${supabaseUrl}/rest/v1/payment_transactions?transaction_id=eq.${payload.id}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                  'apikey': supabaseServiceKey,
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ status: 'voided', raw_response: payload })
+              }
+            );
+          } catch (error) {
+            console.error('❌ Error processing void webhook:', error);
+          }
+        }
         break;
         
       case 'net.authorize.payment.refund.created':
-        console.log('Refund created:', webhookData.payload);
-        // Handle refund transactions
+        console.log('💸 Refund created:', webhookData.payload);
+        // Record refund
+        if (webhookData.payload && supabaseUrl && supabaseServiceKey) {
+          const payload = webhookData.payload;
+          try {
+            await fetch(
+              `${supabaseUrl}/rest/v1/payment_transactions?transaction_id=eq.${payload.id}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${supabaseServiceKey}`,
+                  'apikey': supabaseServiceKey,
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ status: 'refunded', raw_response: payload })
+              }
+            );
+          } catch (error) {
+            console.error('❌ Error processing refund webhook:', error);
+          }
+        }
         break;
         
-      case 'net.authorize.payment.priorAuthCapture.created':
-        console.log('Prior auth capture created:', webhookData.payload);
-        // Handle prior authorization captures
+      case 'net.authorize.customer.created':
+        console.log('👤 Customer profile created:', webhookData.payload);
+        // Customer profile created in CIM
+        break;
+        
+      case 'net.authorize.customer.paymentProfile.created':
+        console.log('💳 Payment profile created:', webhookData.payload);
+        // Payment method saved for customer
         break;
         
       default:
-        console.log('Unknown event type:', eventType);
+        console.log('❓ Unknown event type:', eventType);
         break;
+    }
+    
+    // Mark webhook as processed
+    if (supabaseUrl && supabaseServiceKey && webhookData.eventId) {
+      try {
+        await fetch(
+          `${supabaseUrl}/rest/v1/webhook_events?event_id=eq.${webhookData.eventId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              processed: true,
+              processed_at: new Date().toISOString()
+            })
+          }
+        );
+      } catch (error) {
+        console.error('❌ Error marking webhook as processed:', error);
+      }
     }
 
     // Acknowledge receipt of webhook

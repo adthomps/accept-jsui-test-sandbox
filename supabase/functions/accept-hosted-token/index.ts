@@ -50,16 +50,52 @@ serve(async (req) => {
 
     const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile } = requestBody;
 
-    // Initialize Supabase client for customer profile lookup
+    // Generate unique reference ID for this transaction
+    const referenceId = `ref_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    console.log('🎫 Generated reference ID:', referenceId);
+
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    // Store customer data in pending_payments
+    if (supabaseUrl && supabaseServiceKey) {
+      try {
+        console.log('🔵 Step 2: Storing customer data in pending_payments');
+        const storeResponse = await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            reference_id: referenceId,
+            customer_info: customerInfo,
+            amount: customerInfo.amount,
+            create_profile: createProfile || false
+          })
+        });
+        
+        if (storeResponse.ok) {
+          console.log('✅ Customer data stored in pending_payments');
+        } else {
+          console.warn('⚠️ Error storing pending payment:', storeResponse.status, await storeResponse.text());
+          // Continue anyway - not critical for payment flow
+        }
+      } catch (error) {
+        console.warn('⚠️ Error storing pending payment:', error);
+        // Continue anyway
+      }
+    }
     
     let customerProfileId: string | null = null;
     
     // Look up existing customer profile if email provided
     if (existingCustomerEmail && supabaseUrl && supabaseServiceKey) {
       try {
-        console.log('🔵 Step 2: Looking up existing customer profile for:', existingCustomerEmail);
+        console.log('🔵 Step 3: Looking up existing customer profile for:', existingCustomerEmail);
         const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=authorize_net_customer_profile_id`, {
           headers: {
             'Authorization': `Bearer ${supabaseServiceKey}`,
@@ -73,14 +109,15 @@ serve(async (req) => {
           if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
             customerProfileId = profiles[0].authorize_net_customer_profile_id;
             console.log(`✅ Found existing customer profile: ${customerProfileId}`);
+            // TODO: Validate profile exists in Authorize.Net CIM
           } else {
-            console.log('No existing customer profile found');
+            console.log('⚠️ No existing customer profile found');
           }
         } else {
-          console.warn('Supabase profile lookup failed:', supabaseResponse.status, await supabaseResponse.text());
+          console.warn('⚠️ Supabase profile lookup failed:', supabaseResponse.status, await supabaseResponse.text());
         }
       } catch (error) {
-        console.warn('Error looking up customer profile:', error);
+        console.warn('⚠️ Error looking up customer profile:', error);
         // Continue without profile ID
       }
     }
@@ -92,6 +129,10 @@ serve(async (req) => {
       throw new Error('Authorize.Net credentials not configured');
     }
 
+    // Append reference ID to return URLs
+    const returnUrlWithRef = `${returnUrl || 'https://accept-jsui-test-sandbox.lovable.app/'}${returnUrl?.includes('?') ? '&' : '?'}refId=${encodeURIComponent(referenceId)}`;
+    const cancelUrlWithRef = `${cancelUrl || 'https://accept-jsui-test-sandbox.lovable.app/'}${cancelUrl?.includes('?') ? '&' : '?'}cancelled=true&refId=${encodeURIComponent(referenceId)}`;
+    
     // Create hosted payment page token request
     const tokenRequest: any = {
       getHostedPaymentPageRequest: {
@@ -99,7 +140,7 @@ serve(async (req) => {
           name: apiLoginId,
           transactionKey: transactionKey,
         },
-        refId: `hosted_${Date.now()}`,
+        refId: referenceId,
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: customerInfo.amount.toString(),
@@ -122,9 +163,9 @@ serve(async (req) => {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
                 showReceipt: true,
-                url: returnUrl || `https://accept-jsui-test-sandbox.lovable.app/`,
+                url: returnUrlWithRef,
                 urlText: "Continue",
-                cancelUrl: cancelUrl || `https://accept-jsui-test-sandbox.lovable.app/`,
+                cancelUrl: cancelUrlWithRef,
                 cancelUrlText: "Cancel"
               })
             },
@@ -172,10 +213,10 @@ serve(async (req) => {
       tokenRequest.getHostedPaymentPageRequest.customerProfileId = customerProfileId;
     }
 
-    console.log('🔵 Step 3: Sending request to Authorize.Net API');
+    console.log('🔵 Step 4: Sending request to Authorize.Net API');
     console.log('📤 API Request details:', {
       url: 'https://apitest.authorize.net/xml/v1/request.api',
-      refId: tokenRequest.getHostedPaymentPageRequest.refId,
+      refId: referenceId,
       transactionType: tokenRequest.getHostedPaymentPageRequest.transactionRequest.transactionType,
       amount: tokenRequest.getHostedPaymentPageRequest.transactionRequest.amount,
       customerProfileId: customerProfileId || 'none',
@@ -191,7 +232,7 @@ serve(async (req) => {
       body: JSON.stringify(tokenRequest),
     });
 
-    console.log('🔵 Step 4: Received response from Authorize.Net');
+    console.log('🔵 Step 5: Received response from Authorize.Net');
     const result = await response.json();
 
     // Normalize Authorize.Net response shape (some SDKs return nested under getHostedPaymentPageResponse, others return the object directly)
@@ -210,7 +251,7 @@ serve(async (req) => {
     if (messages?.resultCode === 'Ok' && typeof root?.token === 'string' && root.token.length > 0) {
       const token = root.token as string;
 
-      console.log('✅ Step 5: Payment token generated successfully');
+      console.log('✅ Step 6: Payment token generated successfully');
       console.log('📝 Token length:', token.length, 'characters');
       console.log('🎯 Client should POST this token to: https://test.authorize.net/payment/payment');
 

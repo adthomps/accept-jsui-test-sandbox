@@ -39,16 +39,12 @@ serve(async (req) => {
     const accountType = url.searchParams.get('accountType');
     const customerProfileId = url.searchParams.get('customerProfileId');
     const customerPaymentProfileId = url.searchParams.get('customerPaymentProfileId');
+    const referenceId = url.searchParams.get('refId'); // Our transaction reference
 
-    console.log('Accept Hosted Return Parameters:', {
+    console.log('🔵 Accept Hosted Return Parameters:', {
       transactionId,
       responseCode,
-      responseReasonCode,
-      responseReasonText,
-      authCode,
-      amount,
-      accountNumber,
-      accountType,
+      referenceId,
       customerProfileId,
       customerPaymentProfileId
     });
@@ -69,6 +65,37 @@ serve(async (req) => {
     const supabase = supabaseUrl && supabaseServiceKey
       ? createClient(supabaseUrl, supabaseServiceKey)
       : null;
+
+    // Retrieve customer info from pending_payments
+    let customerEmail = url.searchParams.get('email');
+    let customerData: any = null;
+    
+    if (supabase && referenceId) {
+      console.log('🔍 Looking up pending payment with reference:', referenceId);
+      
+      const { data: pendingPayment, error: lookupError } = await supabase
+        .from('pending_payments')
+        .select('*')
+        .eq('reference_id', referenceId)
+        .eq('used', false)
+        .single();
+      
+      if (lookupError) {
+        console.error('⚠️ Error looking up pending payment:', lookupError);
+      } else if (pendingPayment) {
+        console.log('✅ Found pending payment record');
+        customerData = pendingPayment.customer_info;
+        customerEmail = customerData.email;
+        
+        // Mark as used
+        await supabase
+          .from('pending_payments')
+          .update({ used: true })
+          .eq('id', pendingPayment.id);
+      } else {
+        console.warn('⚠️ No pending payment found for reference:', referenceId);
+      }
+    }
 
     // Store transaction in database
     if (supabase && transactionId) {
@@ -110,28 +137,42 @@ serve(async (req) => {
       }
     }
     
-    // Update customer profile if payment was successful
-    if (status === 'approved' && customerProfileId && supabase) {
+    // Upsert customer profile if payment was successful
+    if (status === 'approved' && customerProfileId && supabase && customerEmail) {
       try {
-        const customerEmail = url.searchParams.get('email');
+        console.log('🔵 Upserting customer profile for:', customerEmail);
         
-        const updateData: any = {
+        const profileData: any = {
+          email: customerEmail,
           authorize_net_customer_profile_id: customerProfileId,
           last_used_at: new Date().toISOString(),
         };
 
-        const { error: updateError } = await supabase
-          .from('customer_profiles')
-          .update(updateData)
-          .eq('email', customerEmail || '');
+        // Add customer details if available from pending_payments
+        if (customerData) {
+          profileData.first_name = customerData.firstName;
+          profileData.last_name = customerData.lastName;
+          profileData.phone = customerData.phone;
+          profileData.address = customerData.address;
+          profileData.city = customerData.city;
+          profileData.state = customerData.state;
+          profileData.zip_code = customerData.zipCode;
+          profileData.country = customerData.country || 'US';
+        }
 
-        if (updateError) {
-          console.error('Error updating customer profile:', updateError);
+        const { error: upsertError } = await supabase
+          .from('customer_profiles')
+          .upsert(profileData, {
+            onConflict: 'email'
+          });
+
+        if (upsertError) {
+          console.error('❌ Error upserting customer profile:', upsertError);
         } else {
-          console.log('Updated customer profile successfully');
+          console.log('✅ Customer profile upserted successfully');
         }
       } catch (error) {
-        console.error('Error updating customer profile:', error);
+        console.error('❌ Error upserting customer profile:', error);
       }
     }
 
