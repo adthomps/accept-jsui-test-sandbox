@@ -50,8 +50,8 @@ serve(async (req) => {
 
     const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile } = requestBody;
 
-    // Generate unique reference ID for this transaction
-    const referenceId = `ref_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    // Generate unique reference ID for this transaction (max 20 chars for Authorize.Net)
+    const referenceId = `${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 8)}`;
     console.log('🎫 Generated reference ID:', referenceId);
 
     // Initialize Supabase client
