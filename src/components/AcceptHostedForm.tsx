@@ -7,8 +7,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck } from 'lucide-react';
+import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 
@@ -62,6 +63,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [debugInfo, setDebugInfo] = useState<{
+    requestPayload?: any;
+    responseData?: any;
+    error?: any;
+  }>({});
+  const [showDebug, setShowDebug] = useState(false);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo(prev => ({
@@ -119,29 +126,41 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     try {
       console.log('🔵 Step 1: Submitting hosted payment request...');
       
+      const requestPayload = {
+        customerInfo: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone,
+          address: customerInfo.address,
+          city: customerInfo.city,
+          state: customerInfo.state,
+          zipCode: customerInfo.zipCode,
+          country: customerInfo.country,
+          amount: parseFloat(customerInfo.amount)
+        },
+        existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
+        createProfile: createProfile,
+        returnUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
+        cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/'
+      };
+      
+      // Store request for debugging
+      setDebugInfo(prev => ({ ...prev, requestPayload }));
+      
       const { data, error } = await supabase.functions.invoke('accept-hosted-token', {
-        body: {
-          customerInfo: {
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            email: customerInfo.email,
-            phone: customerInfo.phone,
-            address: customerInfo.address,
-            city: customerInfo.city,
-            state: customerInfo.state,
-            zipCode: customerInfo.zipCode,
-            country: customerInfo.country,
-            amount: parseFloat(customerInfo.amount)
-          },
-          existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
-          createProfile: createProfile,
-          returnUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
-          cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/'
-        }
+        body: requestPayload
       });
 
       setProcessingStep('Generating secure payment token...');
       console.log('🔵 Step 2: Edge function response:', { data, error });
+      
+      // Store response for debugging
+      setDebugInfo(prev => ({ 
+        ...prev, 
+        responseData: data, 
+        error: error 
+      }));
 
       if (error) {
         console.error('Supabase function invocation error:', error);
@@ -196,12 +215,15 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     } catch (error: any) {
       console.error('Accept Hosted token error:', error);
       
+      // Store error for debugging
+      setDebugInfo(prev => ({ ...prev, error }));
+      
       let errorMessage = "Failed to initialize payment. Please try again.";
       
       // Enhanced error message handling
       if (error.message) {
         if (error.message.includes('Edge Function returned a non-2xx status code')) {
-          errorMessage = "Payment service error. Please check the console for details and try again.";
+          errorMessage = "Payment service error. Check debug panel for details.";
         } else if (error.message.includes('Failed to fetch')) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else {
@@ -214,9 +236,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         description: errorMessage,
         variant: "destructive"
       });
-    } finally {
-      // Don't reset processing state here - user is being redirected
-      // setIsProcessing(false);
+      
+      setIsProcessing(false);
     }
   };
 
@@ -246,6 +267,68 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             </Badge>
           </div>
         </div>
+
+        {/* Debug Panel */}
+        {(debugInfo.requestPayload || debugInfo.responseData || debugInfo.error) && (
+          <Card className="shadow-card bg-gradient-card border-primary/20">
+            <Collapsible open={showDebug} onOpenChange={setShowDebug}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="h-5 w-5 text-primary" />
+                      Debug Information
+                    </CardTitle>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${showDebug ? 'rotate-180' : ''}`} />
+                  </div>
+                  <CardDescription>
+                    API request payload and response details for troubleshooting
+                  </CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {debugInfo.requestPayload && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Request Payload</Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                        {JSON.stringify(debugInfo.requestPayload, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  
+                  {debugInfo.responseData && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-green-600 dark:text-green-400">
+                        Response Data
+                      </Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                        {JSON.stringify(debugInfo.responseData, null, 2)}
+                      </pre>
+                      {debugInfo.responseData.token && (
+                        <Alert>
+                          <Shield className="h-4 w-4" />
+                          <AlertDescription className="text-xs">
+                            Token generated successfully (length: {debugInfo.responseData.token.length} characters)
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+                  
+                  {debugInfo.error && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-destructive">Error Details</Label>
+                      <pre className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg text-xs overflow-x-auto">
+                        {JSON.stringify(debugInfo.error, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Customer Information */}
