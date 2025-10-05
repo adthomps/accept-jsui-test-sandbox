@@ -67,8 +67,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     requestPayload?: any;
     responseData?: any;
     error?: any;
+    authorizeNetRequest?: any;
+    authorizeNetResponse?: any;
   }>({});
   const [showDebug, setShowDebug] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo(prev => ({
@@ -176,6 +180,19 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         console.log('✅ Step 3: Payment token generated successfully');
         console.log('🎫 Token:', data.token ? `${data.token.substring(0, 30)}...` : 'undefined');
         
+        setGeneratedToken(data.token);
+        setShowDebug(true);
+        
+        // If debug mode, stop here and don't redirect
+        if (debugMode) {
+          setIsProcessing(false);
+          toast({
+            title: "Debug Mode: Token Generated",
+            description: "Review the debug panel below. Click 'Continue to Payment' when ready.",
+          });
+          return;
+        }
+        
         setProcessingStep('Redirecting to secure payment page...');
         toast({
           title: "Redirecting to Payment",
@@ -241,6 +258,39 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     }
   };
 
+  const handleContinueToPayment = () => {
+    if (!generatedToken) {
+      toast({
+        title: "No Token",
+        description: "Please generate a payment token first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://test.authorize.net/payment/payment';
+    form.style.display = 'none';
+    
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = 'token';
+    tokenInput.value = generatedToken;
+    
+    form.appendChild(tokenInput);
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${label} copied to clipboard`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -268,8 +318,35 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           </div>
         </div>
 
+        {/* Debug Mode Toggle */}
+        <Card className="shadow-card bg-gradient-card border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="debug-mode"
+                  checked={debugMode}
+                  onCheckedChange={setDebugMode}
+                />
+                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
+                  <Code className="h-4 w-4 text-primary" />
+                  Debug Mode - Stop before redirecting to Authorize.Net
+                </Label>
+              </div>
+              {debugMode && (
+                <Badge variant="secondary">Debug Mode Active</Badge>
+              )}
+            </div>
+            {debugMode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                When enabled, the payment token will be generated but you won't be redirected. Review the debug panel to inspect the API request/response.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Debug Panel */}
-        {(debugInfo.requestPayload || debugInfo.responseData || debugInfo.error) && (
+        {(debugInfo.requestPayload || debugInfo.responseData || debugInfo.error || generatedToken) && (
           <Card className="shadow-card bg-gradient-card border-primary/20">
             <Collapsible open={showDebug} onOpenChange={setShowDebug}>
               <CollapsibleTrigger asChild>
@@ -290,8 +367,17 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 <CardContent className="space-y-4">
                   {debugInfo.requestPayload && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold">Request Payload</Label>
-                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">Edge Function Request Payload</Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.requestPayload, null, 2), 'Request payload')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border">
                         {JSON.stringify(debugInfo.requestPayload, null, 2)}
                       </pre>
                     </div>
@@ -299,22 +385,52 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                   
                   {debugInfo.responseData && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-green-600 dark:text-green-400">
-                        Response Data
-                      </Label>
-                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold text-green-600 dark:text-green-400">
+                          Edge Function Response
+                        </Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.responseData, null, 2), 'Response data')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border border-green-500/20">
                         {JSON.stringify(debugInfo.responseData, null, 2)}
                       </pre>
                       {debugInfo.responseData.token && (
-                        <Alert>
-                          <Shield className="h-4 w-4" />
+                        <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
                           <AlertDescription className="text-xs">
-                            Token generated successfully (length: {debugInfo.responseData.token.length} characters)
+                            ✅ Token generated successfully (length: {debugInfo.responseData.token.length} characters)
                           </AlertDescription>
                         </Alert>
                       )}
                     </div>
                   )}
+
+                  {generatedToken && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Generated Token</Label>
+                      <div className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border border-primary/20">
+                        <code className="break-all">{generatedToken}</code>
+                      </div>
+                      <Alert>
+                        <AlertDescription className="text-xs">
+                          This token will be POSTed to: <code>https://test.authorize.net/payment/payment</code>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
+
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <AlertDescription className="text-xs">
+                      💡 <strong>Tip:</strong> Check the edge function logs for the full Authorize.Net API request/response. 
+                      The logs contain sanitized versions showing the exact structure sent to Authorize.Net.
+                    </AlertDescription>
+                  </Alert>
                   
                   {debugInfo.error && (
                     <div className="space-y-2">
@@ -322,6 +438,21 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                       <pre className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg text-xs overflow-x-auto">
                         {JSON.stringify(debugInfo.error, null, 2)}
                       </pre>
+                    </div>
+                  )}
+
+                  {generatedToken && debugMode && (
+                    <div className="pt-4 border-t">
+                      <Button 
+                        onClick={handleContinueToPayment}
+                        className="w-full"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Continue to Payment Page
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Click to proceed to Authorize.Net with the generated token
+                      </p>
                     </div>
                   )}
                 </CardContent>

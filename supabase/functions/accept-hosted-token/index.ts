@@ -11,6 +11,7 @@ interface HostedTokenRequest {
     lastName: string;
     email: string;
     phone?: string;
+    company?: string;
     address: string;
     city: string;
     state: string;
@@ -150,6 +151,7 @@ serve(async (req) => {
           billTo: {
             firstName: customerInfo.firstName,
             lastName: customerInfo.lastName,
+            company: customerInfo.company || '',
             address: customerInfo.address,
             city: customerInfo.city,
             state: customerInfo.state,
@@ -184,6 +186,7 @@ serve(async (req) => {
             {
               settingName: "hostedPaymentPaymentOptions",
               settingValue: JSON.stringify({
+                cardCodeRequired: true,
                 showCreditCard: true,
                 showBankAccount: true
               })
@@ -200,7 +203,7 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: true,
                 requiredEmail: true,
-                addPaymentProfile: createProfile || false
+                addPaymentProfile: customerProfileId ? true : (createProfile || false)
               })
             }
           ]
@@ -208,20 +211,27 @@ serve(async (req) => {
       },
     };
 
-    // Add customer profile ID if found
+    // Add customer profile ID to transactionRequest.profile if found
     if (customerProfileId) {
-      tokenRequest.getHostedPaymentPageRequest.customerProfileId = customerProfileId;
+      tokenRequest.getHostedPaymentPageRequest.transactionRequest.profile = {
+        customerProfileId: customerProfileId
+      };
     }
 
     console.log('🔵 Step 4: Sending request to Authorize.Net API');
-    console.log('📤 API Request details:', {
-      url: 'https://apitest.authorize.net/xml/v1/request.api',
-      refId: referenceId,
-      transactionType: tokenRequest.getHostedPaymentPageRequest.transactionRequest.transactionType,
-      amount: tokenRequest.getHostedPaymentPageRequest.transactionRequest.amount,
-      customerProfileId: customerProfileId || 'none',
-      createProfile: createProfile || false
-    });
+    
+    // Log the full sanitized request for debugging
+    const sanitizedRequest = {
+      ...tokenRequest,
+      getHostedPaymentPageRequest: {
+        ...tokenRequest.getHostedPaymentPageRequest,
+        merchantAuthentication: {
+          name: '[REDACTED]',
+          transactionKey: '[REDACTED]'
+        }
+      }
+    };
+    console.log('📤 Full Authorize.Net API Request (sanitized):', JSON.stringify(sanitizedRequest, null, 2));
 
     // Send request to Authorize.Net
     const response = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
@@ -234,6 +244,9 @@ serve(async (req) => {
 
     console.log('🔵 Step 5: Received response from Authorize.Net');
     const result = await response.json();
+
+    // Log the full response for debugging
+    console.log('📥 Full Authorize.Net API Response:', JSON.stringify(result, null, 2));
 
     // Normalize Authorize.Net response shape (some SDKs return nested under getHostedPaymentPageResponse, others return the object directly)
     const root = result?.getHostedPaymentPageResponse ?? result;
