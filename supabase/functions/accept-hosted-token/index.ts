@@ -192,6 +192,19 @@ serve(async (req) => {
               })
             },
             {
+              settingName: "hostedPaymentSecurityOptions",
+              settingValue: JSON.stringify({
+                captcha: false
+              })
+            },
+            {
+              settingName: "hostedPaymentShippingAddressOptions",
+              settingValue: JSON.stringify({
+                show: true,
+                required: false
+              })
+            },
+            {
               settingName: "hostedPaymentBillingAddressOptions", 
               settingValue: JSON.stringify({
                 show: true,
@@ -205,7 +218,15 @@ serve(async (req) => {
                 requiredEmail: true,
                 addPaymentProfile: customerProfileId ? true : (createProfile || false)
               })
+            },
+            {
+              settingName: "hostedPaymentOrderOptions",
+              settingValue: JSON.stringify({
+                show: true,
+                merchantName: "Demo Store, Inc."
+              })
             }
+            // Note: hostedPaymentIFrameCommunicatorUrl is not required for full-page redirect
           ]
         }
       },
