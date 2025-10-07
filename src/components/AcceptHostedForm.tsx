@@ -146,7 +146,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
         existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
         createProfile: createProfile,
         returnUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
-        cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/'
+        cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
+        debug: debugMode
       };
       
       // Store request for debugging
@@ -163,7 +164,9 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       setDebugInfo(prev => ({ 
         ...prev, 
         responseData: data, 
-        error: error 
+        error: error,
+        authorizeNetRequest: data?.debug?.request,
+        authorizeNetResponse: data?.debug?.response,
       }));
 
       if (error) {
@@ -383,6 +386,42 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     </div>
                   )}
                   
+                  {debugInfo.authorizeNetRequest && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">Authorize.Net API Request (sanitized)</Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.authorizeNetRequest, null, 2), 'Authorize.Net request')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border">
+                        {JSON.stringify(debugInfo.authorizeNetRequest, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
+                  {debugInfo.authorizeNetResponse && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">Authorize.Net API Response</Label>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.authorizeNetResponse, null, 2), 'Authorize.Net response')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border">
+                        {JSON.stringify(debugInfo.authorizeNetResponse, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
                   {debugInfo.responseData && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">

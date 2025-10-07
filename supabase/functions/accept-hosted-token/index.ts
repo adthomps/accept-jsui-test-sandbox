@@ -40,7 +40,7 @@ serve(async (req) => {
 
   try {
     console.log('🔵 Step 1: Received accept-hosted-token request');
-    const requestBody: HostedTokenRequest = await req.json();
+    const requestBody: HostedTokenRequest & { debug?: boolean } = await req.json();
     console.log('📦 Request payload:', JSON.stringify({
       ...requestBody,
       customerInfo: {
@@ -48,6 +48,7 @@ serve(async (req) => {
         email: requestBody.customerInfo.email ? '[REDACTED]' : undefined
       }
     }, null, 2));
+    const debug = Boolean(requestBody.debug);
 
     const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile } = requestBody;
 
@@ -148,16 +149,16 @@ serve(async (req) => {
           customer: {
             email: customerInfo.email,
           },
-          billTo: {
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            company: customerInfo.company || '',
-            address: customerInfo.address,
-            city: customerInfo.city,
-            state: customerInfo.state,
-            zip: customerInfo.zipCode,
-            country: customerInfo.country,
-          },
+            billTo: {
+              firstName: customerInfo.firstName,
+              lastName: customerInfo.lastName,
+              company: customerInfo.company || '',
+              address: customerInfo.address,
+              city: customerInfo.city,
+              state: customerInfo.state,
+              zip: customerInfo.zipCode,
+              country: customerInfo.country === 'US' ? 'USA' : customerInfo.country,
+            },
         },
         hostedPaymentSettings: {
           setting: [
@@ -186,7 +187,7 @@ serve(async (req) => {
             {
               settingName: "hostedPaymentPaymentOptions",
               settingValue: JSON.stringify({
-                cardCodeRequired: true,
+                cardCodeRequired: false,
                 showCreditCard: true,
                 showBankAccount: true
               })
@@ -200,7 +201,7 @@ serve(async (req) => {
             {
               settingName: "hostedPaymentShippingAddressOptions",
               settingValue: JSON.stringify({
-                show: true,
+                show: false,
                 required: false
               })
             },
@@ -214,8 +215,8 @@ serve(async (req) => {
             {
               settingName: "hostedPaymentCustomerOptions",
               settingValue: JSON.stringify({
-                showEmail: true,
-                requiredEmail: true,
+                showEmail: false,
+                requiredEmail: false,
                 addPaymentProfile: customerProfileId ? true : false
               })
             },
@@ -292,6 +293,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         token,
+        ...(debug ? { debug: { request: sanitizedRequest, response: root } } : {})
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -333,6 +335,7 @@ serve(async (req) => {
         errorCode,
         errorText,
       },
+      ...(debug ? { debug: { request: sanitizedRequest, response: root } } : {})
     }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -354,7 +357,8 @@ serve(async (req) => {
       details: {
         type: 'server_error',
         timestamp: new Date().toISOString()
-      }
+      },
+      ...(debug ? { debug: { request: 'unavailable', response: 'unavailable' } } : {})
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
