@@ -790,14 +790,25 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 <div>ZIP: Any 5 digits</div>
               </div>
             </div>
-            <div className="space-y-3">
-              <h3 className="font-semibold">Test Credentials Needed</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                <li>API Login ID (for all methods)</li>
-                <li>Client Key (AcceptJS & AcceptUI)</li>
-                <li>Transaction Key (server-side processing)</li>
-                <li>Sandbox account from Authorize.Net</li>
-              </ul>
+            <div>
+              <h4 className="font-medium mb-2">Test Customers</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Customer 1</span>
+                  <code>123456789</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Customer 2</span>
+                  <code>0987654321</code>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Test Customer Details</h4>
+              <div className="space-y-1 text-sm">
+                <div>Expiry: Any future date</div>
+                <div>CVV: Any 3-4 digits</div>
+              </div>
             </div>
           </CardContent>
         </Card>
