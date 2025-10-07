@@ -216,7 +216,7 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: true,
                 requiredEmail: true,
-                addPaymentProfile: customerProfileId ? true : (createProfile || false)
+                addPaymentProfile: customerProfileId ? true : false
               })
             },
             {
