@@ -131,9 +131,9 @@ serve(async (req) => {
       throw new Error('Authorize.Net credentials not configured');
     }
 
-    // Append reference ID to return URLs
-    const returnUrlWithRef = `${returnUrl || 'https://accept-jsui-test-sandbox.lovable.app/'}${returnUrl?.includes('?') ? '&' : '?'}refId=${encodeURIComponent(referenceId)}`;
-    const cancelUrlWithRef = `${cancelUrl || 'https://accept-jsui-test-sandbox.lovable.app/'}${cancelUrl?.includes('?') ? '&' : '?'}cancelled=true&refId=${encodeURIComponent(referenceId)}`;
+    // Use simple return URLs (Authorize.Net will append transaction data)
+    const returnUrlWithRef = returnUrl || 'https://accept-jsui-test-sandbox.lovable.app/';
+    const cancelUrlWithRef = cancelUrl || 'https://accept-jsui-test-sandbox.lovable.app/';
     
     // Create hosted payment page token request
     const tokenRequest: any = {
