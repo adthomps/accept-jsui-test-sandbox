@@ -1,29 +1,29 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { z } from 'zod';
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 const customerSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(50),
-  lastName: z.string().min(1, 'Last name is required').max(50),
-  email: z.string().email('Valid email is required'),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
+  email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
-  address: z.string().min(1, 'Address is required').max(100),
-  city: z.string().min(1, 'City is required').max(50),
-  state: z.string().min(1, 'State is required').max(20),
-  zipCode: z.string().min(1, 'ZIP code is required').max(10),
-  country: z.string().default('US'),
-  amount: z.number().min(0.01, 'Amount must be at least $0.01').max(99999.99)
+  address: z.string().min(1, "Address is required").max(100),
+  city: z.string().min(1, "City is required").max(50),
+  state: z.string().min(1, "State is required").max(20),
+  zipCode: z.string().min(1, "ZIP code is required").max(10),
+  country: z.string().default("US"),
+  amount: z.number().min(0.01, "Amount must be at least $0.01").max(99999.99),
 });
 
 interface CustomerInfo {
@@ -46,22 +46,22 @@ interface AcceptHostedFormProps {
 const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '555-123-4567',
-    address: '123 Main Street',
-    city: 'Bellevue',
-    state: 'WA',
-    zipCode: '98004',
-    country: 'US',
-    amount: '29.99'
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@example.com",
+    phone: "555-123-4567",
+    address: "123 Main Street",
+    city: "Bellevue",
+    state: "WA",
+    zipCode: "98004",
+    country: "US",
+    amount: "29.99",
   });
   const [isReturningCustomer, setIsReturningCustomer] = useState(false);
-  const [existingCustomerEmail, setExistingCustomerEmail] = useState('');
+  const [existingCustomerEmail, setExistingCustomerEmail] = useState("");
   const [createProfile, setCreateProfile] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState('');
+  const [processingStep, setProcessingStep] = useState("");
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [debugInfo, setDebugInfo] = useState<{
     requestPayload?: any;
@@ -75,14 +75,14 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
-    setCustomerInfo(prev => ({
+    setCustomerInfo((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Clear validation error for this field
     if (validationErrors[field]) {
-      setValidationErrors(prev => {
+      setValidationErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -94,14 +94,14 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     try {
       customerSchema.parse({
         ...customerInfo,
-        amount: parseFloat(customerInfo.amount)
+        amount: parseFloat(customerInfo.amount),
       });
       setValidationErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: { [key: string]: string } = {};
-        error.issues.forEach(issue => {
+        error.issues.forEach((issue) => {
           if (issue.path[0]) {
             errors[issue.path[0] as string] = issue.message;
           }
@@ -114,22 +114,22 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast({
         title: "Validation Error",
         description: "Please correct the errors in the form",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
-    setProcessingStep('Validating payment details...');
+    setProcessingStep("Validating payment details...");
 
     try {
-      console.log('🔵 Step 1: Submitting hosted payment request...');
-      
+      console.log("🔵 Step 1: Submitting hosted payment request...");
+
       const requestPayload = {
         customerInfo: {
           firstName: customerInfo.firstName,
@@ -141,51 +141,51 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           state: customerInfo.state,
           zipCode: customerInfo.zipCode,
           country: customerInfo.country,
-          amount: parseFloat(customerInfo.amount)
+          amount: parseFloat(customerInfo.amount),
         },
         existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
         createProfile: createProfile,
-        returnUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
-        cancelUrl: 'https://accept-jsui-test-sandbox.lovable.app/',
-        debug: debugMode
+        returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
+        cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
+        debug: debugMode,
       };
-      
+
       // Store request for debugging
-      setDebugInfo(prev => ({ ...prev, requestPayload }));
-      
-      const { data, error } = await supabase.functions.invoke('accept-hosted-token', {
-        body: requestPayload
+      setDebugInfo((prev) => ({ ...prev, requestPayload }));
+
+      const { data, error } = await supabase.functions.invoke("accept-hosted-token", {
+        body: requestPayload,
       });
 
-      setProcessingStep('Generating secure payment token...');
-      console.log('🔵 Step 2: Edge function response:', { data, error });
-      
+      setProcessingStep("Generating secure payment token...");
+      console.log("🔵 Step 2: Edge function response:", { data, error });
+
       // Store response for debugging
-      setDebugInfo(prev => ({ 
-        ...prev, 
-        responseData: data, 
+      setDebugInfo((prev) => ({
+        ...prev,
+        responseData: data,
         error: error,
         authorizeNetRequest: data?.debug?.request,
         authorizeNetResponse: data?.debug?.response,
       }));
 
       if (error) {
-        console.error('Supabase function invocation error:', error);
+        console.error("Supabase function invocation error:", error);
         throw new Error(`API Error: ${error.message}`);
       }
 
       if (!data) {
-        throw new Error('No response data received from payment service');
+        throw new Error("No response data received from payment service");
       }
 
       if (data.success) {
-        setProcessingStep('Token generated successfully!');
-        console.log('✅ Step 3: Payment token generated successfully');
-        console.log('🎫 Token:', data.token ? `${data.token.substring(0, 30)}...` : 'undefined');
-        
+        setProcessingStep("Token generated successfully!");
+        console.log("✅ Step 3: Payment token generated successfully");
+        console.log("🎫 Token:", data.token ? `${data.token.substring(0, 30)}...` : "undefined");
+
         setGeneratedToken(data.token);
         setShowDebug(true);
-        
+
         // If debug mode, stop here and don't redirect
         if (debugMode) {
           setIsProcessing(false);
@@ -195,68 +195,68 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           });
           return;
         }
-        
-        setProcessingStep('Redirecting to secure payment page...');
+
+        setProcessingStep("Redirecting to secure payment page...");
         toast({
           title: "Redirecting to Payment",
           description: "Opening Authorize.Net hosted payment page...",
         });
-        
-        console.log('🚀 Step 4: Creating form to POST token to Authorize.Net...');
-        
+
+        console.log("🚀 Step 4: Creating form to POST token to Authorize.Net...");
+
         // Create a form to POST the token (Authorize.Net requires POST, not GET)
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'https://test.authorize.net/payment/payment';
-        form.style.display = 'none';
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = 'token';
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = "https://test.authorize.net/payment/payment";
+        form.style.display = "none";
+
+        const tokenInput = document.createElement("input");
+        tokenInput.type = "hidden";
+        tokenInput.name = "token";
         tokenInput.value = data.token;
-        
+
         form.appendChild(tokenInput);
         document.body.appendChild(form);
-        
-        console.log('📤 Step 5: Submitting form to Authorize.Net hosted payment page...');
-        
+
+        console.log("📤 Step 5: Submitting form to Authorize.Net hosted payment page...");
+
         // Submit the form after a small delay to show processing state
         setTimeout(() => {
           form.submit();
         }, 1000);
       } else {
-        console.error('Payment token generation failed:', data);
+        console.error("Payment token generation failed:", data);
         toast({
           title: "Payment Token Generation Failed",
           description: data.error || "Failed to generate payment token. Please check your information and try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (error: any) {
-      console.error('Accept Hosted token error:', error);
-      
+      console.error("Accept Hosted token error:", error);
+
       // Store error for debugging
-      setDebugInfo(prev => ({ ...prev, error }));
-      
+      setDebugInfo((prev) => ({ ...prev, error }));
+
       let errorMessage = "Failed to initialize payment. Please try again.";
-      
+
       // Enhanced error message handling
       if (error.message) {
-        if (error.message.includes('Edge Function returned a non-2xx status code')) {
+        if (error.message.includes("Edge Function returned a non-2xx status code")) {
           errorMessage = "Payment service error. Check debug panel for details.";
-        } else if (error.message.includes('Failed to fetch')) {
+        } else if (error.message.includes("Failed to fetch")) {
           errorMessage = "Network error. Please check your connection and try again.";
         } else {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: "Payment Initialization Error",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
-      
+
       setIsProcessing(false);
     }
   };
@@ -266,21 +266,21 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       toast({
         title: "No Token",
         description: "Please generate a payment token first",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://test.authorize.net/payment/payment';
-    form.style.display = 'none';
-    
-    const tokenInput = document.createElement('input');
-    tokenInput.type = 'hidden';
-    tokenInput.name = 'token';
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://test.authorize.net/payment/payment";
+    form.style.display = "none";
+
+    const tokenInput = document.createElement("input");
+    tokenInput.type = "hidden";
+    tokenInput.name = "token";
     tokenInput.value = generatedToken;
-    
+
     form.appendChild(tokenInput);
     document.body.appendChild(form);
     form.submit();
@@ -305,9 +305,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Accept Hosted Payment
             </h1>
-            <p className="text-muted-foreground">
-              Secure hosted payment page with customer profile support
-            </p>
+            <p className="text-muted-foreground">Secure hosted payment page with customer profile support</p>
           </div>
           <div className="ml-auto flex gap-2">
             <Badge variant="secondary" className="gap-2">
@@ -326,23 +324,18 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="debug-mode"
-                  checked={debugMode}
-                  onCheckedChange={setDebugMode}
-                />
+                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
                 <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
                   <Code className="h-4 w-4 text-primary" />
                   Debug Mode - Stop before redirecting to Authorize.Net
                 </Label>
               </div>
-              {debugMode && (
-                <Badge variant="secondary">Debug Mode Active</Badge>
-              )}
+              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
             </div>
             {debugMode && (
               <p className="text-xs text-muted-foreground mt-2">
-                When enabled, the payment token will be generated but you won't be redirected. Review the debug panel to inspect the API request/response.
+                When enabled, the payment token will be generated but you won't be redirected. Review the debug panel to
+                inspect the API request/response.
               </p>
             )}
           </CardContent>
@@ -359,11 +352,9 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                       <Code className="h-5 w-5 text-primary" />
                       Debug Information
                     </CardTitle>
-                    <ChevronDown className={`h-5 w-5 transition-transform ${showDebug ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-5 w-5 transition-transform ${showDebug ? "rotate-180" : ""}`} />
                   </div>
-                  <CardDescription>
-                    API request payload and response details for troubleshooting
-                  </CardDescription>
+                  <CardDescription>API request payload and response details for troubleshooting</CardDescription>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -372,10 +363,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-semibold">Edge Function Request Payload</Label>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.requestPayload, null, 2), 'Request payload')}
+                          onClick={() =>
+                            copyToClipboard(JSON.stringify(debugInfo.requestPayload, null, 2), "Request payload")
+                          }
                         >
                           Copy
                         </Button>
@@ -385,15 +378,20 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                       </pre>
                     </div>
                   )}
-                  
+
                   {debugInfo.authorizeNetRequest && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-semibold">Authorize.Net API Request (sanitized)</Label>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.authorizeNetRequest, null, 2), 'Authorize.Net request')}
+                          onClick={() =>
+                            copyToClipboard(
+                              JSON.stringify(debugInfo.authorizeNetRequest, null, 2),
+                              "Authorize.Net request",
+                            )
+                          }
                         >
                           Copy
                         </Button>
@@ -408,10 +406,15 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-semibold">Authorize.Net API Response</Label>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.authorizeNetResponse, null, 2), 'Authorize.Net response')}
+                          onClick={() =>
+                            copyToClipboard(
+                              JSON.stringify(debugInfo.authorizeNetResponse, null, 2),
+                              "Authorize.Net response",
+                            )
+                          }
                         >
                           Copy
                         </Button>
@@ -428,10 +431,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                         <Label className="text-sm font-semibold text-green-600 dark:text-green-400">
                           Edge Function Response
                         </Label>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.responseData, null, 2), 'Response data')}
+                          onClick={() =>
+                            copyToClipboard(JSON.stringify(debugInfo.responseData, null, 2), "Response data")
+                          }
                         >
                           Copy
                         </Button>
@@ -466,11 +471,12 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                     <AlertDescription className="text-xs">
-                      💡 <strong>Tip:</strong> Check the edge function logs for the full Authorize.Net API request/response. 
-                      The logs contain sanitized versions showing the exact structure sent to Authorize.Net.
+                      💡 <strong>Tip:</strong> Check the edge function logs for the full Authorize.Net API
+                      request/response. The logs contain sanitized versions showing the exact structure sent to
+                      Authorize.Net.
                     </AlertDescription>
                   </Alert>
-                  
+
                   {debugInfo.error && (
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-destructive">Error Details</Label>
@@ -482,10 +488,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
                   {generatedToken && debugMode && (
                     <div className="pt-4 border-t">
-                      <Button 
-                        onClick={handleContinueToPayment}
-                        className="w-full"
-                      >
+                      <Button onClick={handleContinueToPayment} className="w-full">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Continue to Payment Page
                       </Button>
@@ -508,9 +511,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 <User className="h-5 w-5 text-primary" />
                 Customer Information
               </CardTitle>
-              <CardDescription>
-                Customer details for hosted payment processing
-              </CardDescription>
+              <CardDescription>Customer details for hosted payment processing</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Customer Type Selection */}
@@ -553,8 +554,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <Input
                       id="firstName"
                       value={customerInfo.firstName}
-                      onChange={(e) => handleCustomerInfoChange('firstName', e.target.value)}
-                      className={validationErrors.firstName ? 'border-destructive' : ''}
+                      onChange={(e) => handleCustomerInfoChange("firstName", e.target.value)}
+                      className={validationErrors.firstName ? "border-destructive" : ""}
                     />
                     {validationErrors.firstName && (
                       <p className="text-xs text-destructive">{validationErrors.firstName}</p>
@@ -565,27 +566,25 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <Input
                       id="lastName"
                       value={customerInfo.lastName}
-                      onChange={(e) => handleCustomerInfoChange('lastName', e.target.value)}
-                      className={validationErrors.lastName ? 'border-destructive' : ''}
+                      onChange={(e) => handleCustomerInfoChange("lastName", e.target.value)}
+                      className={validationErrors.lastName ? "border-destructive" : ""}
                     />
                     {validationErrors.lastName && (
                       <p className="text-xs text-destructive">{validationErrors.lastName}</p>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input
-                    id="email" 
+                    id="email"
                     type="email"
                     value={customerInfo.email}
-                    onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
-                    className={validationErrors.email ? 'border-destructive' : ''}
+                    onChange={(e) => handleCustomerInfoChange("email", e.target.value)}
+                    className={validationErrors.email ? "border-destructive" : ""}
                   />
-                  {validationErrors.email && (
-                    <p className="text-xs text-destructive">{validationErrors.email}</p>
-                  )}
+                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -594,7 +593,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <Input
                       id="phone"
                       value={customerInfo.phone}
-                      onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
+                      onChange={(e) => handleCustomerInfoChange("phone", e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -604,12 +603,10 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                       type="number"
                       step="0.01"
                       value={customerInfo.amount}
-                      onChange={(e) => handleCustomerInfoChange('amount', e.target.value)}
-                      className={validationErrors.amount ? 'border-destructive' : ''}
+                      onChange={(e) => handleCustomerInfoChange("amount", e.target.value)}
+                      className={validationErrors.amount ? "border-destructive" : ""}
                     />
-                    {validationErrors.amount && (
-                      <p className="text-xs text-destructive">{validationErrors.amount}</p>
-                    )}
+                    {validationErrors.amount && <p className="text-xs text-destructive">{validationErrors.amount}</p>}
                   </div>
                 </div>
 
@@ -620,48 +617,42 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                     <MapPin className="h-4 w-4" />
                     Billing Address
                   </Label>
-                  
+
                   <div className="space-y-2">
                     <Input
                       placeholder="Street Address *"
                       value={customerInfo.address}
-                      onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
-                      className={validationErrors.address ? 'border-destructive' : ''}
+                      onChange={(e) => handleCustomerInfoChange("address", e.target.value)}
+                      className={validationErrors.address ? "border-destructive" : ""}
                     />
-                    {validationErrors.address && (
-                      <p className="text-xs text-destructive">{validationErrors.address}</p>
-                    )}
+                    {validationErrors.address && <p className="text-xs text-destructive">{validationErrors.address}</p>}
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-2">
                       <Input
                         placeholder="City *"
                         value={customerInfo.city}
-                        onChange={(e) => handleCustomerInfoChange('city', e.target.value)}
-                        className={validationErrors.city ? 'border-destructive' : ''}
+                        onChange={(e) => handleCustomerInfoChange("city", e.target.value)}
+                        className={validationErrors.city ? "border-destructive" : ""}
                       />
-                      {validationErrors.city && (
-                        <p className="text-xs text-destructive">{validationErrors.city}</p>
-                      )}
+                      {validationErrors.city && <p className="text-xs text-destructive">{validationErrors.city}</p>}
                     </div>
                     <div className="space-y-2">
                       <Input
                         placeholder="State *"
                         value={customerInfo.state}
-                        onChange={(e) => handleCustomerInfoChange('state', e.target.value)}
-                        className={validationErrors.state ? 'border-destructive' : ''}
+                        onChange={(e) => handleCustomerInfoChange("state", e.target.value)}
+                        className={validationErrors.state ? "border-destructive" : ""}
                       />
-                      {validationErrors.state && (
-                        <p className="text-xs text-destructive">{validationErrors.state}</p>
-                      )}
+                      {validationErrors.state && <p className="text-xs text-destructive">{validationErrors.state}</p>}
                     </div>
                     <div className="space-y-2">
                       <Input
                         placeholder="ZIP *"
                         value={customerInfo.zipCode}
-                        onChange={(e) => handleCustomerInfoChange('zipCode', e.target.value)}
-                        className={validationErrors.zipCode ? 'border-destructive' : ''}
+                        onChange={(e) => handleCustomerInfoChange("zipCode", e.target.value)}
+                        className={validationErrors.zipCode ? "border-destructive" : ""}
                       />
                       {validationErrors.zipCode && (
                         <p className="text-xs text-destructive">{validationErrors.zipCode}</p>
@@ -680,26 +671,21 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 <CreditCard className="h-5 w-5 text-primary" />
                 Payment Settings
               </CardTitle>
-              <CardDescription>
-                Configure hosted payment page options
-              </CardDescription>
+              <CardDescription>Configure hosted payment page options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="create-profile"
-                    checked={createProfile}
-                    onCheckedChange={setCreateProfile}
-                  />
+                  <Switch id="create-profile" checked={createProfile} onCheckedChange={setCreateProfile} />
                   <Label htmlFor="create-profile">Save payment method for future use</Label>
                 </div>
-                
+
                 {createProfile && (
                   <Alert>
                     <Shield className="h-4 w-4" />
                     <AlertDescription>
-                      Customer can choose to save their payment information securely with Authorize.Net for faster future transactions.
+                      Customer can choose to save their payment information securely with Authorize.Net for faster
+                      future transactions.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -751,16 +737,11 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
               <Separator />
 
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isProcessing}
-                onClick={handleSubmit}
-              >
+              <Button type="submit" className="w-full" disabled={isProcessing} onClick={handleSubmit}>
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                    {processingStep || 'Processing...'}
+                    {processingStep || "Processing..."}
                   </div>
                 ) : (
                   <>
@@ -808,6 +789,15 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                 <div>CVV: Any 3-4 digits</div>
                 <div>ZIP: Any 5 digits</div>
               </div>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold">Test Credentials Needed</h3>
+              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                <li>API Login ID (for all methods)</li>
+                <li>Client Key (AcceptJS & AcceptUI)</li>
+                <li>Transaction Key (server-side processing)</li>
+                <li>Sandbox account from Authorize.Net</li>
+              </ul>
             </div>
           </CardContent>
         </Card>
