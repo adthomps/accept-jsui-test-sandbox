@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
 import AcceptHostedForm from './AcceptHostedForm';
+import AcceptCustomerForm from './AcceptCustomerForm';
 import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
@@ -31,13 +32,7 @@ const PaymentMethodSelector = () => {
   }
 
   if (selectedMethod === 'acceptcustomer') {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Accept Customer integration will be available in a future update.",
-      variant: "default"
-    });
-    setSelectedMethod(null);
-    return null;
+    return <AcceptCustomerForm onBack={() => setSelectedMethod(null)} />;
   }
 
   return (
@@ -195,7 +190,7 @@ const PaymentMethodSelector = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     Accept Customer
-                    <Badge variant="outline">Coming Soon</Badge>
+                    <Badge variant="secondary">CIM</Badge>
                   </CardTitle>
                   <CardDescription>
                     Customer Information Manager API for storing payment methods
@@ -225,9 +220,8 @@ const PaymentMethodSelector = () => {
                     onClick={() => setSelectedMethod('acceptcustomer')}
                     className="w-full"
                     variant="outline"
-                    disabled
                   >
-                    Coming Soon
+                    Test Accept Customer
                   </Button>
                 </CardFooter>
               </Card>

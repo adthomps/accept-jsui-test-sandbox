@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.generate-sim-form]
 verify_jwt = false
+
+[functions.create-customer-profile]
+verify_jwt = false
+
+[functions.add-payment-profile]
+verify_jwt = false
+
+[functions.charge-customer-profile]
+verify_jwt = false

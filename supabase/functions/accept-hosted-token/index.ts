@@ -56,6 +56,10 @@ serve(async (req) => {
     const referenceId = `${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 8)}`;
     console.log('🎫 Generated reference ID:', referenceId);
 
+    // Build URLs: Add refId to success URL but keep cancel URL clean (prevents Authorize.Net validation issues)
+    const returnUrlWithRef = `${returnUrl || 'https://accept-jsui-test-sandbox.lovable.app/'}?refId=${referenceId}`;
+    const cancelUrlClean = cancelUrl || 'https://accept-jsui-test-sandbox.lovable.app/';
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -132,8 +136,6 @@ serve(async (req) => {
     }
 
     // Use simple return URLs (Authorize.Net will append transaction data)
-    const returnUrlWithRef = returnUrl || 'https://accept-jsui-test-sandbox.lovable.app/';
-    const cancelUrlWithRef = cancelUrl || 'https://accept-jsui-test-sandbox.lovable.app/';
     
     // Create hosted payment page token request
     const tokenRequest: any = {
@@ -164,13 +166,13 @@ serve(async (req) => {
           setting: [
             {
               settingName: "hostedPaymentReturnOptions",
-              settingValue: JSON.stringify({
-                showReceipt: true,
-                url: returnUrlWithRef,
-                urlText: "Continue",
-                cancelUrl: cancelUrlWithRef,
-                cancelUrlText: "Cancel"
-              })
+            settingValue: JSON.stringify({
+              showReceipt: true,
+              url: returnUrlWithRef,
+              urlText: "Continue",
+              cancelUrl: cancelUrlClean,
+              cancelUrlText: "Cancel"
+            })
             },
             {
               settingName: "hostedPaymentButtonOptions",
