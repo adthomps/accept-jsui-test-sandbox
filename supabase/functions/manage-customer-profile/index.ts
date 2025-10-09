@@ -18,8 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 Generating token to add payment profile');
-    const { customerProfileId, returnUrl, cancelUrl, debug } = await req.json();
+    console.log('🔵 Generating token to manage customer profile');
+    const { customerProfileId, returnUrl, debug } = await req.json();
 
     const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
     const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
@@ -32,11 +32,10 @@ serve(async (req) => {
     const referenceId = `${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 8)}`;
     console.log('🎫 Generated reference ID:', referenceId);
 
-    // Build returnUrl with refId, but keep cancelUrl clean (lesson from Accept Hosted)
+    // Build returnUrl with refId
     const returnUrlWithRef = `${returnUrl}?refId=${referenceId}`;
-    const cancelUrlClean = cancelUrl;
 
-    // Create hosted profile page request for ADDING payment method
+    // Create hosted profile page request for MANAGING profile
     const tokenRequest = {
       getHostedProfilePageRequest: {
         merchantAuthentication: {
@@ -63,16 +62,11 @@ serve(async (req) => {
               settingValue: "testMode"
             },
             {
-              settingName: "hostedProfileCardCodeRequired",
-              settingValue: "false"
-            },
-            {
-              settingName: "hostedProfileBillingAddressOptions",
-              settingValue: "showNone"
-            },
-            {
-              settingName: "hostedProfilePaymentOptions",
-              settingValue: "showCreditCard"
+              settingName: "hostedProfileManageOptions",
+              settingValue: JSON.stringify({
+                showPayment: true,
+                showShipping: false
+              })
             }
           ]
         }
@@ -113,7 +107,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       token,
-      gatewayUrl: 'https://test.authorize.net/customer/addPayment',
+      gatewayUrl: 'https://test.authorize.net/customer/manage',
       referenceId,
       debug: debug ? {
         request: {

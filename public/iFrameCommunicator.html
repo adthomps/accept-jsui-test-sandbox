@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iFrame Communicator</title>
+</head>
+<body>
+  <script>
+    window.addEventListener("message", function(event) {
+      // Only accept messages from Authorize.Net
+      const authorizedOrigins = [
+        "https://accept.authorize.net",
+        "https://test.authorize.net"
+      ];
+      
+      if (!authorizedOrigins.includes(event.origin)) {
+        return;
+      }
+
+      // Forward message to parent window
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(event.data, "*");
+      }
+    }, false);
+  </script>
+</body>
+</html>

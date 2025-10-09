@@ -31,6 +31,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [selectedTab, setSelectedTab] = useState('create');
+  const [displayMode, setDisplayMode] = useState<'redirect' | 'lightbox' | 'iframe'>('redirect');
 
   // Form states
   const [customerInfo, setCustomerInfo] = useState({
@@ -139,7 +140,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         // Redirect to Authorize.Net hosted form to add payment method
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'https://test.authorize.net/payment/payment';
+        form.action = data.gatewayUrl || 'https://test.authorize.net/customer/addPayment';
         
         const tokenInput = document.createElement('input');
         tokenInput.type = 'hidden';
@@ -157,6 +158,63 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       toast({
         title: "Error",
         description: error.message || 'Failed to add payment method',
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageProfile = async () => {
+    if (!selectedCustomerId) {
+      toast({
+        title: "Error",
+        description: "Please select a customer profile",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    setDebugInfo(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-customer-profile', {
+        body: {
+          customerProfileId: selectedCustomerId,
+          returnUrl: window.location.href,
+          debug: debugMode
+        }
+      });
+
+      if (error) throw error;
+
+      if (debugMode && data.debug) {
+        setDebugInfo(data.debug);
+      }
+
+      if (data.success && data.token) {
+        // Redirect to Authorize.Net hosted form to manage profile
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.gatewayUrl || 'https://test.authorize.net/customer/manage';
+        
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = 'token';
+        tokenInput.value = data.token;
+        form.appendChild(tokenInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        throw new Error(data.error || 'Failed to get management token');
+      }
+    } catch (error: any) {
+      console.error('Error managing profile:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to manage profile',
         variant: "destructive"
       });
     } finally {
@@ -311,9 +369,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="create">Create Profile</TabsTrigger>
-            <TabsTrigger value="add-payment">Add Payment Method</TabsTrigger>
+            <TabsTrigger value="add-payment">Add Payment</TabsTrigger>
+            <TabsTrigger value="manage">Manage Profile</TabsTrigger>
             <TabsTrigger value="charge">Charge Profile</TabsTrigger>
           </TabsList>
 
@@ -425,14 +484,14 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
               <CardHeader>
                 <CardTitle>Add Payment Method</CardTitle>
                 <CardDescription>
-                  Add a payment method to an existing customer profile
+                  Add a new payment method to an existing customer profile using Authorize.Net's hosted form
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Select a customer profile and click to add a payment method via hosted form
+                    This will redirect you to Authorize.Net's secure hosted page to add a payment method. You'll be returned here after completion.
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-4">
@@ -487,6 +546,81 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                     <>
                       <CreditCard className="mr-2 h-4 w-4" />
                       Add Payment Method
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Profile Tab */}
+          <TabsContent value="manage" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Customer Profile</CardTitle>
+                <CardDescription>
+                  View, edit, and manage payment methods for an existing customer profile
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This opens Authorize.Net's hosted page where you can view all payment methods, add new ones, edit or delete existing methods.
+                  </AlertDescription>
+                </Alert>
+                <div className="space-y-4">
+                  {customerProfiles.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No customer profiles found. Create one first.
+                    </div>
+                  ) : (
+                    customerProfiles.map((profile) => (
+                      <Card
+                        key={profile.id}
+                        className={`cursor-pointer transition-colors ${
+                          selectedCustomerId === profile.authorize_net_customer_profile_id
+                            ? 'border-primary'
+                            : 'hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedCustomerId(profile.authorize_net_customer_profile_id)}
+                      >
+                        <CardContent className="pt-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">
+                                {profile.first_name} {profile.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{profile.email}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Profile ID: {profile.authorize_net_customer_profile_id}
+                              </p>
+                            </div>
+                            {selectedCustomerId === profile.authorize_net_customer_profile_id && (
+                              <CheckCircle className="h-5 w-5 text-primary" />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  onClick={handleManageProfile}
+                  disabled={loading || !selectedCustomerId}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating Token...
+                    </>
+                  ) : (
+                    <>
+                      <User className="mr-2 h-4 w-4" />
+                      Manage Profile
                     </>
                   )}
                 </Button>
@@ -581,16 +715,32 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         <Card>
           <CardHeader>
             <CardTitle>Testing Information</CardTitle>
-            <CardDescription>Test customer profile and payment methods</CardDescription>
+            <CardDescription>Use these test cards and credentials in sandbox mode</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">Test Credit Cards:</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• Visa: 4111 1111 1111 1111</p>
-                <p>• Mastercard: 5424 0000 0000 0015</p>
-                <p>• CVV: Any 3 digits</p>
-                <p>• Expiration: Any future date</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium mb-2">Test Credit Cards:</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>• Visa: <code className="bg-muted px-1 py-0.5 rounded">4111 1111 1111 1111</code></p>
+                  <p>• Mastercard: <code className="bg-muted px-1 py-0.5 rounded">5424 0000 0000 0015</code></p>
+                  <p>• Amex: <code className="bg-muted px-1 py-0.5 rounded">3782 822463 10005</code></p>
+                  <p>• Discover: <code className="bg-muted px-1 py-0.5 rounded">6011 0000 0000 0012</code></p>
+                  <p>• CVV: Any 3-4 digits</p>
+                  <p>• Expiration: Any future date</p>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Validation Mode:</h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p><strong>testMode</strong> - Field validation only (Luhn check)</p>
+                  <p className="text-xs">• No processor interaction</p>
+                  <p className="text-xs">• No authorization required</p>
+                  <p className="text-xs">• No billing address needed</p>
+                  <p className="text-xs mt-2"><strong>liveMode</strong> - $0.00/$0.01 auth</p>
+                  <p className="text-xs">• Requires billing address</p>
+                  <p className="text-xs">• Creates temp transaction</p>
+                </div>
               </div>
             </div>
           </CardContent>
