@@ -63,10 +63,7 @@ serve(async (req) => {
             },
             {
               settingName: "hostedProfileManageOptions",
-              settingValue: JSON.stringify({
-                showPayment: true,
-                showShipping: false
-              })
+              settingValue: "showPayment"
             }
           ]
         }

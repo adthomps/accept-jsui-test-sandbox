@@ -51,6 +51,11 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
   useEffect(() => {
     loadCustomerProfiles();
+    // Load saved profile from localStorage
+    const savedProfileId = localStorage.getItem('selectedCustomerProfileId');
+    if (savedProfileId) {
+      setSelectedCustomerId(savedProfileId);
+    }
   }, []);
 
   const loadCustomerProfiles = async () => {
@@ -86,11 +91,15 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
 
       if (data.success) {
+        const newProfileId = data.customerProfileId;
         toast({
           title: "Customer Profile Created",
-          description: `Profile ID: ${data.customerProfileId}`,
+          description: `Profile ID: ${newProfileId}`,
         });
         await loadCustomerProfiles();
+        // Auto-select and persist the new profile
+        setSelectedCustomerId(newProfileId);
+        localStorage.setItem('selectedCustomerProfileId', newProfileId);
         setSelectedTab('add-payment');
       } else {
         throw new Error(data.error || 'Failed to create customer profile');
@@ -508,7 +517,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                             ? 'border-primary'
                             : 'hover:border-primary/50'
                         }`}
-                        onClick={() => setSelectedCustomerId(profile.authorize_net_customer_profile_id)}
+                        onClick={() => {
+                          setSelectedCustomerId(profile.authorize_net_customer_profile_id);
+                          localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
+                        }}
                       >
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between">
@@ -583,7 +595,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                             ? 'border-primary'
                             : 'hover:border-primary/50'
                         }`}
-                        onClick={() => setSelectedCustomerId(profile.authorize_net_customer_profile_id)}
+                        onClick={() => {
+                          setSelectedCustomerId(profile.authorize_net_customer_profile_id);
+                          localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
+                        }}
                       >
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between">
@@ -658,7 +673,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                             ? 'border-primary'
                             : 'hover:border-primary/50'
                         }`}
-                        onClick={() => setSelectedCustomerId(profile.authorize_net_customer_profile_id)}
+                        onClick={() => {
+                          setSelectedCustomerId(profile.authorize_net_customer_profile_id);
+                          localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
+                        }}
                       >
                         <CardContent className="pt-6">
                           <div className="flex items-center justify-between">
