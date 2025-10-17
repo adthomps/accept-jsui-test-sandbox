@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.charge-customer-profile]
 verify_jwt = false
+
+[functions.get-customer-profile]
+verify_jwt = false
+
+[functions.get-hosted-profile-token]
+verify_jwt = false

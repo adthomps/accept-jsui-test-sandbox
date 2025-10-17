@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy } from 'lucide-react';
+import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AcceptCustomerFormProps {
   onBack: () => void;
@@ -24,6 +25,35 @@ interface CustomerProfile {
   last_used_at?: string;
 }
 
+interface PaymentProfile {
+  customerPaymentProfileId: string;
+  cardNumber: string;
+  cardType: string;
+  expirationDate: string;
+  billTo: any;
+}
+
+interface ShippingAddress {
+  customerAddressId: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phoneNumber?: string;
+}
+
+interface FetchedProfile {
+  customerProfileId: string;
+  merchantCustomerId: string;
+  description: string;
+  email: string;
+  paymentProfiles: PaymentProfile[];
+  shippingAddresses: ShippingAddress[];
+}
+
 const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -32,6 +62,15 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [selectedTab, setSelectedTab] = useState('create');
   const [displayMode, setDisplayMode] = useState<'redirect' | 'lightbox' | 'iframe'>('redirect');
+  
+  // Get Profile states
+  const [fetchedProfile, setFetchedProfile] = useState<FetchedProfile | null>(null);
+  const [fetchProfileId, setFetchProfileId] = useState('');
+  
+  // Hosted Profile Page states
+  const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'editPayment' | 'addShipping' | 'editShipping'>('manage');
+  const [paymentProfileId, setPaymentProfileId] = useState('');
+  const [shippingAddressId, setShippingAddressId] = useState('');
 
   // Form states
   const [customerInfo, setCustomerInfo] = useState({
@@ -174,6 +213,56 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     }
   };
 
+  const handleGetProfile = async () => {
+    const profileId = fetchProfileId || selectedCustomerId;
+    
+    if (!profileId) {
+      toast({
+        title: "Error",
+        description: "Please enter or select a customer profile ID",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    setDebugInfo(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('get-customer-profile', {
+        body: {
+          customerProfileId: profileId,
+          debug: debugMode
+        }
+      });
+
+      if (error) throw error;
+
+      if (debugMode && data.debug) {
+        setDebugInfo(data.debug);
+      }
+
+      if (data.success && data.profile) {
+        setFetchedProfile(data.profile);
+        toast({
+          title: "Profile Fetched",
+          description: `Found ${data.profile.paymentProfiles.length} payment(s) and ${data.profile.shippingAddresses.length} shipping address(es)`,
+        });
+      } else {
+        throw new Error(data.error || 'Failed to fetch profile');
+      }
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to fetch profile',
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleManageProfile = async () => {
     if (!selectedCustomerId) {
       toast({
@@ -184,13 +273,35 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       return;
     }
 
+    // Validate required fields based on page type
+    if (pageType === 'editPayment' && !paymentProfileId) {
+      toast({
+        title: "Error",
+        description: "Payment Profile ID is required for editing a payment method",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (pageType === 'editShipping' && !shippingAddressId) {
+      toast({
+        title: "Error",
+        description: "Shipping Address ID is required for editing a shipping address",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     setDebugInfo(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('manage-customer-profile', {
+      const { data, error } = await supabase.functions.invoke('get-hosted-profile-token', {
         body: {
           customerProfileId: selectedCustomerId,
+          pageType: pageType,
+          paymentProfileId: paymentProfileId || undefined,
+          shippingAddressId: shippingAddressId || undefined,
           returnUrl: window.location.href,
           debug: debugMode
         }
@@ -203,10 +314,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
 
       if (data.success && data.token) {
-        // Redirect to Authorize.Net hosted form to manage profile
+        // Redirect to Authorize.Net hosted form
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = data.gatewayUrl || 'https://test.authorize.net/customer/manage';
+        form.action = data.gatewayUrl;
         
         const tokenInput = document.createElement('input');
         tokenInput.type = 'hidden';
@@ -217,13 +328,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         document.body.appendChild(form);
         form.submit();
       } else {
-        throw new Error(data.error || 'Failed to get management token');
+        throw new Error(data.error || 'Failed to get hosted page token');
       }
     } catch (error: any) {
-      console.error('Error managing profile:', error);
+      console.error('Error opening hosted page:', error);
       toast({
         title: "Error",
-        description: error.message || 'Failed to manage profile',
+        description: error.message || 'Failed to open hosted page',
         variant: "destructive"
       });
     } finally {
@@ -418,9 +529,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="create" className="flex flex-col gap-1 py-3">
               <span>Create Profile</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="get-profile" className="flex flex-col gap-1 py-3">
+              <span>Get Profile</span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
             </TabsTrigger>
             <TabsTrigger value="add-payment" className="flex flex-col gap-1 py-3">
@@ -428,7 +543,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
               <Badge variant="default" className="text-[10px] px-1.5 py-0">Hosted Form</Badge>
             </TabsTrigger>
             <TabsTrigger value="manage" className="flex flex-col gap-1 py-3">
-              <span>Manage Profile</span>
+              <span>Hosted Page</span>
               <Badge variant="default" className="text-[10px] px-1.5 py-0">Hosted Form</Badge>
             </TabsTrigger>
             <TabsTrigger value="charge" className="flex flex-col gap-1 py-3">
@@ -543,6 +658,221 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             </Card>
           </TabsContent>
 
+          {/* Get Profile Tab */}
+          <TabsContent value="get-profile" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  Get Customer Profile Details
+                  <Badge variant="outline">Direct CIM API</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getCustomerProfileRequest</code> to fetch profile details including payment methods and shipping addresses. 
+                  This retrieves the IDs needed to edit specific payment or shipping profiles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <Eye className="h-4 w-4" />
+                  <AlertDescription>
+                    Fetch profile details to see payment and shipping profile IDs. You can then use these IDs to edit specific payment methods or shipping addresses.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="fetchProfileId">Customer Profile ID</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="fetchProfileId"
+                      placeholder="Enter profile ID or select from list below"
+                      value={fetchProfileId}
+                      onChange={(e) => setFetchProfileId(e.target.value)}
+                    />
+                    <Button
+                      onClick={handleGetProfile}
+                      disabled={loading || (!fetchProfileId && !selectedCustomerId)}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Fetching...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Fetch
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {customerProfiles.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      No customer profiles found. Create one first.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Or select from existing profiles:</Label>
+                      {customerProfiles.map((profile) => (
+                        <Card
+                          key={profile.id}
+                          className={`cursor-pointer transition-colors ${
+                            fetchProfileId === profile.authorize_net_customer_profile_id
+                              ? 'border-primary'
+                              : 'hover:border-primary/50'
+                          }`}
+                          onClick={() => setFetchProfileId(profile.authorize_net_customer_profile_id)}
+                        >
+                          <CardContent className="pt-4 pb-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {profile.first_name} {profile.last_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{profile.email}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  ID: {profile.authorize_net_customer_profile_id}
+                                </p>
+                              </div>
+                              {fetchProfileId === profile.authorize_net_customer_profile_id && (
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Display fetched profile details */}
+                {fetchedProfile && (
+                  <Card className="border-primary/50 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="text-base">Profile Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Customer Information
+                        </h4>
+                        <div className="text-sm space-y-1">
+                          <p><strong>Email:</strong> {fetchedProfile.email}</p>
+                          <p><strong>Profile ID:</strong> {fetchedProfile.customerProfileId}</p>
+                          {fetchedProfile.merchantCustomerId && (
+                            <p><strong>Merchant Customer ID:</strong> {fetchedProfile.merchantCustomerId}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {fetchedProfile.paymentProfiles.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Payment Methods ({fetchedProfile.paymentProfiles.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {fetchedProfile.paymentProfiles.map((pp) => (
+                              <Card key={pp.customerPaymentProfileId}>
+                                <CardContent className="pt-3 pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm">
+                                      <p className="font-medium">{pp.cardType} {pp.cardNumber}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Payment Profile ID: {pp.customerPaymentProfileId}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Expires: {pp.expirationDate}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setPaymentProfileId(pp.customerPaymentProfileId);
+                                        setPageType('editPayment');
+                                        setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                        setSelectedTab('manage');
+                                        toast({
+                                          title: "Ready to Edit",
+                                          description: "Switched to Hosted Page tab with payment profile ID filled",
+                                        });
+                                      }}
+                                    >
+                                      Edit This
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {fetchedProfile.shippingAddresses.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Shipping Addresses ({fetchedProfile.shippingAddresses.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {fetchedProfile.shippingAddresses.map((addr) => (
+                              <Card key={addr.customerAddressId}>
+                                <CardContent className="pt-3 pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm">
+                                      <p className="font-medium">
+                                        {addr.firstName} {addr.lastName}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {addr.address}, {addr.city}, {addr.state} {addr.zip}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Shipping ID: {addr.customerAddressId}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setShippingAddressId(addr.customerAddressId);
+                                        setPageType('editShipping');
+                                        setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                        setSelectedTab('manage');
+                                        toast({
+                                          title: "Ready to Edit",
+                                          description: "Switched to Hosted Page tab with shipping address ID filled",
+                                        });
+                                      }}
+                                    >
+                                      Edit This
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {fetchedProfile.paymentProfiles.length === 0 && fetchedProfile.shippingAddresses.length === 0 && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            This profile has no payment methods or shipping addresses yet.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Add Payment Method Tab */}
           <TabsContent value="add-payment" className="space-y-4">
             <Card>
@@ -625,27 +955,104 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             </Card>
           </TabsContent>
 
-          {/* Manage Profile Tab */}
+          {/* Manage Profile Tab / Hosted Profile Page */}
           <TabsContent value="manage" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Manage Customer Profile
+                  Hosted Profile Page
                   <Badge variant="default">Accept Customer Hosted Form</Badge>
                 </CardTitle>
                 <CardDescription>
-                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getHostedProfilePageRequest</code> with <code className="bg-muted px-1 py-0.5 rounded text-xs">/customer/manage</code> action. 
-                  Opens Authorize.Net's hosted page where customers can view, add, edit, or delete all payment methods.
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getHostedProfilePageRequest</code> to open Authorize.Net's hosted page for various actions: 
+                  manage all payment methods, add a new payment, edit a specific payment, add shipping, or edit shipping.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    This opens Authorize.Net's hosted page where you can view all payment methods, add new ones, edit or delete existing methods.
+                    Select the page type below. For editing specific payment or shipping profiles, first use the "Get Profile" tab to retrieve the profile IDs.
                   </AlertDescription>
                 </Alert>
+                
+                {/* Page Type Selector */}
+                <div className="space-y-2">
+                  <Label htmlFor="pageType">Page Type</Label>
+                  <Select value={pageType} onValueChange={(value: any) => setPageType(value)}>
+                    <SelectTrigger id="pageType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manage">
+                        <div className="flex items-center gap-2">
+                          <span>Manage</span>
+                          <span className="text-xs text-muted-foreground">- View/Edit All</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="addPayment">
+                        <div className="flex items-center gap-2">
+                          <span>Add Payment</span>
+                          <span className="text-xs text-muted-foreground">- New Payment Method</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="editPayment">
+                        <div className="flex items-center gap-2">
+                          <span>Edit Payment</span>
+                          <span className="text-xs text-muted-foreground">- Specific Payment</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="addShipping">
+                        <div className="flex items-center gap-2">
+                          <span>Add Shipping</span>
+                          <span className="text-xs text-muted-foreground">- New Shipping Address</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="editShipping">
+                        <div className="flex items-center gap-2">
+                          <span>Edit Shipping</span>
+                          <span className="text-xs text-muted-foreground">- Specific Shipping</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Conditional Payment Profile ID Field */}
+                {pageType === 'editPayment' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentProfileId">Payment Profile ID *</Label>
+                    <Input
+                      id="paymentProfileId"
+                      placeholder="e.g., 523421899"
+                      value={paymentProfileId}
+                      onChange={(e) => setPaymentProfileId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use "Get Profile" tab to find payment profile IDs
+                    </p>
+                  </div>
+                )}
+
+                {/* Conditional Shipping Address ID Field */}
+                {pageType === 'editShipping' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingAddressId">Shipping Address ID *</Label>
+                    <Input
+                      id="shippingAddressId"
+                      placeholder="e.g., 523421900"
+                      value={shippingAddressId}
+                      onChange={(e) => setShippingAddressId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use "Get Profile" tab to find shipping address IDs
+                    </p>
+                  </div>
+                )}
+
+                {/* Customer Profile Selection */}
                 <div className="space-y-4">
+                  <Label>Select Customer Profile</Label>
                   {customerProfiles.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No customer profiles found. Create one first.
@@ -694,12 +1101,12 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating Token...
+                      Opening Hosted Page...
                     </>
                   ) : (
                     <>
-                      <User className="mr-2 h-4 w-4" />
-                      Manage Profile
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Open Hosted Page
                     </>
                   )}
                 </Button>
