@@ -213,11 +213,15 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
   const handleManageProfile = async () => {
     if (!selectedCustomerId) {
-      toast({
-        title: "Error",
-        description: "Please select a customer profile",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Please select a customer profile", variant: "destructive" });
+      return;
+    }
+    if (pageType === 'editPayment' && !paymentProfileId) {
+      toast({ title: "Missing Payment Profile ID", description: "Enter the Payment Profile ID to edit.", variant: "destructive" });
+      return;
+    }
+    if (pageType === 'editShipping' && !shippingAddressId) {
+      toast({ title: "Missing Shipping Address ID", description: "Enter the Shipping Address ID to edit.", variant: "destructive" });
       return;
     }
 
@@ -820,7 +824,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Select the page type below. For addPayment/addShipping, you can specify the customer profile ID to add to.
+                    Select the page type below. For editPayment/editShipping, keep the Customer Profile ID set to the owner profile and also enter the specific Payment Profile ID or Shipping Address ID.
                   </AlertDescription>
                 </Alert>
                 
@@ -934,6 +938,37 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                     </div>
                   )}
                 </div>
+
+                {/* Edit-specific identifiers */}
+                {pageType === 'editPayment' && (
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="paymentProfileId">Payment Profile ID to edit</Label>
+                    <Input
+                      id="paymentProfileId"
+                      placeholder="e.g., 536896667"
+                      value={paymentProfileId}
+                      onChange={(e) => setPaymentProfileId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Keep the Customer Profile ID set to the owner profile. Do not paste the payment ID there.
+                    </p>
+                  </div>
+                )}
+
+                {pageType === 'editShipping' && (
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="shippingAddressId">Shipping Address ID to edit</Label>
+                    <Input
+                      id="shippingAddressId"
+                      placeholder="e.g., 524355496"
+                      value={shippingAddressId}
+                      onChange={(e) => setShippingAddressId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Keep the Customer Profile ID set to the owner profile. Do not paste the shipping ID there.
+                    </p>
+                  </div>
+                )}
               </CardContent>
               <CardFooter>
                 <Button
