@@ -67,8 +67,8 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [fetchedProfile, setFetchedProfile] = useState<FetchedProfile | null>(null);
   const [fetchProfileId, setFetchProfileId] = useState('');
   
-  // Hosted Profile Page states (editPayment/editShipping removed - use 'manage' instead)
-  const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'addShipping'>('manage');
+  // Hosted Profile Page states (editPayment/editShipping map to 'manage' internally)
+  const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'addShipping' | 'editPayment' | 'editShipping'>('manage');
   const [paymentProfileId, setPaymentProfileId] = useState('');
   const [shippingAddressId, setShippingAddressId] = useState('');
 
@@ -198,9 +198,12 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
     } catch (error: any) {
       console.error('Error fetching profile:', error);
+      const msg = (error?.name === 'FunctionsHttpError')
+        ? `Profile not found in Authorize.Net. Verify the ID${profileId ? ` (${profileId})` : ''} or create a new profile.`
+        : (error.message || 'Failed to fetch profile');
       toast({
         title: "Error",
-        description: error.message || 'Failed to fetch profile',
+        description: msg,
         variant: "destructive"
       });
     } finally {
@@ -261,9 +264,12 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
     } catch (error: any) {
       console.error('Error opening hosted page:', error);
+      const msg = (error?.name === 'FunctionsHttpError')
+        ? `Profile not found in Authorize.Net. Verify the ID${selectedCustomerId ? ` (${selectedCustomerId})` : ''} or create a new profile.`
+        : (error.message || 'Failed to open hosted page');
       toast({
         title: "Error",
-        description: error.message || 'Failed to open hosted page',
+        description: msg,
         variant: "destructive"
       });
     } finally {
@@ -842,6 +848,18 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                         <div className="flex items-center gap-2">
                           <span>Add Shipping</span>
                           <span className="text-xs text-muted-foreground">- New Shipping Address</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="editPayment">
+                        <div className="flex items-center gap-2">
+                          <span>Edit Payment</span>
+                          <span className="text-xs text-muted-foreground">- Opens Manage to edit</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="editShipping">
+                        <div className="flex items-center gap-2">
+                          <span>Edit Shipping</span>
+                          <span className="text-xs text-muted-foreground">- Opens Manage to edit</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
