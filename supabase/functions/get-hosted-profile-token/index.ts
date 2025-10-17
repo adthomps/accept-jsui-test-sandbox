@@ -92,26 +92,34 @@ Deno.serve(async (req) => {
 
     if (finalReturnUrl) {
       hostedProfileSettings.push({
-        settingName: 'hostedProfileReturnUrl',
-        settingValue: finalReturnUrl,
+        setting: {
+          settingName: 'hostedProfileReturnUrl',
+          settingValue: finalReturnUrl,
+        },
       });
     }
 
     if (finalCancelUrl) {
       hostedProfileSettings.push({
-        settingName: 'hostedProfileReturnUrlText',
-        settingValue: 'Continue',
+        setting: {
+          settingName: 'hostedProfileReturnUrlText',
+          settingValue: 'Continue',
+        },
       });
       hostedProfileSettings.push({
-        settingName: 'hostedProfilePageBorderVisible',
-        settingValue: 'true',
+        setting: {
+          settingName: 'hostedProfilePageBorderVisible',
+          settingValue: 'true',
+        },
       });
     }
 
     // Add validation mode
     hostedProfileSettings.push({
-      settingName: 'hostedProfileValidationMode',
-      settingValue: 'testMode',
+      setting: {
+        settingName: 'hostedProfileValidationMode',
+        settingValue: 'testMode',
+      },
     });
 
     // Build the base token request
