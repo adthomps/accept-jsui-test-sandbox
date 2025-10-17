@@ -86,7 +86,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   });
 
   const [paymentAmount, setPaymentAmount] = useState('29.99');
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('524732491');
 
   useEffect(() => {
     loadCustomerProfiles();
