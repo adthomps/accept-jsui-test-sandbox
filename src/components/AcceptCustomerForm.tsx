@@ -853,43 +853,67 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
                 {/* Customer Profile Selection */}
                 <div className="space-y-4">
-                  <Label>Select Customer Profile</Label>
+                  <Label>Select or Enter Customer Profile</Label>
+                  
+                  {/* Manual Profile ID Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="manualProfileId">Customer Profile ID</Label>
+                    <Input
+                      id="manualProfileId"
+                      placeholder="Enter profile ID manually..."
+                      value={selectedCustomerId || ''}
+                      onChange={(e) => {
+                        setSelectedCustomerId(e.target.value);
+                        if (e.target.value) {
+                          localStorage.setItem('selectedCustomerProfileId', e.target.value);
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You can type a profile ID directly or select from the list below
+                    </p>
+                  </div>
+
+                  {/* Existing Profile List */}
                   {customerProfiles.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No customer profiles found. Create one first.
+                      No customer profiles found. Create one first or enter a profile ID above.
                     </div>
                   ) : (
-                    customerProfiles.map((profile) => (
-                      <Card
-                        key={profile.id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedCustomerId === profile.authorize_net_customer_profile_id
-                            ? 'border-primary'
-                            : 'hover:border-primary/50'
-                        }`}
-                        onClick={() => {
-                          setSelectedCustomerId(profile.authorize_net_customer_profile_id);
-                          localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
-                        }}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {profile.first_name} {profile.last_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">{profile.email}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Profile ID: {profile.authorize_net_customer_profile_id}
-                              </p>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Or select from existing profiles:</Label>
+                      {customerProfiles.map((profile) => (
+                        <Card
+                          key={profile.id}
+                          className={`cursor-pointer transition-colors ${
+                            selectedCustomerId === profile.authorize_net_customer_profile_id
+                              ? 'border-primary'
+                              : 'hover:border-primary/50'
+                          }`}
+                          onClick={() => {
+                            setSelectedCustomerId(profile.authorize_net_customer_profile_id);
+                            localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
+                          }}
+                        >
+                          <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">
+                                  {profile.first_name} {profile.last_name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">{profile.email}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Profile ID: {profile.authorize_net_customer_profile_id}
+                                </p>
+                              </div>
+                              {selectedCustomerId === profile.authorize_net_customer_profile_id && (
+                                <CheckCircle className="h-5 w-5 text-primary" />
+                              )}
                             </div>
-                            {selectedCustomerId === profile.authorize_net_customer_profile_id && (
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
