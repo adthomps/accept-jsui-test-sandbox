@@ -212,17 +212,31 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   };
 
   const handleManageProfile = async () => {
-    if (!selectedCustomerId) {
-      toast({ title: "Error", description: "Please select a customer profile", variant: "destructive" });
-      return;
-    }
-    if (pageType === 'editPayment' && !paymentProfileId) {
-      toast({ title: "Missing Payment Profile ID", description: "Enter the Payment Profile ID to edit.", variant: "destructive" });
-      return;
-    }
-    if (pageType === 'editShipping' && !shippingAddressId) {
-      toast({ title: "Missing Shipping Address ID", description: "Enter the Shipping Address ID to edit.", variant: "destructive" });
-      return;
+    // For editPayment/editShipping, we need the payment/shipping ID and customer profile ID
+    if (pageType === 'editPayment') {
+      if (!paymentProfileId) {
+        toast({ title: "Missing Payment Profile ID", description: "Enter the Payment Profile ID to edit.", variant: "destructive" });
+        return;
+      }
+      if (!selectedCustomerId) {
+        toast({ title: "Missing Customer Profile ID", description: "Enter the Customer Profile ID that owns this payment method.", variant: "destructive" });
+        return;
+      }
+    } else if (pageType === 'editShipping') {
+      if (!shippingAddressId) {
+        toast({ title: "Missing Shipping Address ID", description: "Enter the Shipping Address ID to edit.", variant: "destructive" });
+        return;
+      }
+      if (!selectedCustomerId) {
+        toast({ title: "Missing Customer Profile ID", description: "Enter the Customer Profile ID that owns this shipping address.", variant: "destructive" });
+        return;
+      }
+    } else {
+      // For all other page types, just need customer profile ID
+      if (!selectedCustomerId) {
+        toast({ title: "Error", description: "Please select a customer profile", variant: "destructive" });
+        return;
+      }
     }
 
     // Note: editPayment and editShipping redirect to 'manage' page
@@ -724,20 +738,21 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                                       </p>
                                     </div>
                                      <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setSelectedCustomerId(fetchedProfile.customerProfileId);
-                                        setPageType('manage');
-                                        setSelectedTab('manage');
-                                        toast({
-                                          title: "Ready to Manage",
-                                          description: "Switched to Hosted Page tab (manage) to edit payment methods",
-                                        });
-                                      }}
-                                    >
-                                      Manage
-                                    </Button>
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={() => {
+                                         setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                         setPaymentProfileId(pp.customerPaymentProfileId);
+                                         setPageType('editPayment');
+                                         setSelectedTab('manage');
+                                         toast({
+                                           title: "Ready to Edit",
+                                           description: "Switched to Hosted Page (editPayment) with IDs filled",
+                                         });
+                                       }}
+                                     >
+                                       Edit
+                                     </Button>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -768,21 +783,22 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                                         Shipping ID: {addr.customerAddressId}
                                       </p>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setSelectedCustomerId(fetchedProfile.customerProfileId);
-                                        setPageType('manage');
-                                        setSelectedTab('manage');
-                                        toast({
-                                          title: "Ready to Manage",
-                                          description: "Switched to Hosted Page tab (manage) to edit shipping addresses",
-                                        });
-                                      }}
-                                    >
-                                      Manage
-                                    </Button>
+                                     <Button
+                                       size="sm"
+                                       variant="outline"
+                                       onClick={() => {
+                                         setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                         setShippingAddressId(addr.customerAddressId);
+                                         setPageType('editShipping');
+                                         setSelectedTab('manage');
+                                         toast({
+                                           title: "Ready to Edit",
+                                           description: "Switched to Hosted Page (editShipping) with IDs filled",
+                                         });
+                                       }}
+                                     >
+                                       Edit
+                                     </Button>
                                   </div>
                                 </CardContent>
                               </Card>
@@ -824,7 +840,9 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Select the page type below. For editPayment/editShipping, keep the Customer Profile ID set to the owner profile and also enter the specific Payment Profile ID or Shipping Address ID.
+                    {pageType === 'editPayment' && 'Enter the Payment Profile ID you want to edit, plus the Customer Profile ID that owns it.'}
+                    {pageType === 'editShipping' && 'Enter the Shipping Address ID you want to edit, plus the Customer Profile ID that owns it.'}
+                    {!['editPayment', 'editShipping'].includes(pageType) && 'Select a customer profile to manage, add payment methods, or add shipping addresses.'}
                   </AlertDescription>
                 </Alert>
                 
@@ -873,100 +891,134 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                   </p>
                 </div>
 
-                {/* Customer Profile Selection */}
-                <div className="space-y-4">
-                  <Label>Select or Enter Customer Profile</Label>
-                  
-                  {/* Manual Profile ID Input */}
-                  <div className="space-y-2">
-                    <Label htmlFor="manualProfileId">Customer Profile ID</Label>
-                    <Input
-                      id="manualProfileId"
-                      placeholder="Enter profile ID manually..."
-                      value={selectedCustomerId || ''}
-                      onChange={(e) => {
-                        setSelectedCustomerId(e.target.value);
-                        if (e.target.value) {
-                          localStorage.setItem('selectedCustomerProfileId', e.target.value);
-                        }
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      You can type a profile ID directly or select from the list below
-                    </p>
-                  </div>
-
-                  {/* Existing Profile List */}
-                  {customerProfiles.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No customer profiles found. Create one first or enter a profile ID above.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Or select from existing profiles:</Label>
-                      {customerProfiles.map((profile) => (
-                        <Card
-                          key={profile.id}
-                          className={`cursor-pointer transition-colors ${
-                            selectedCustomerId === profile.authorize_net_customer_profile_id
-                              ? 'border-primary'
-                              : 'hover:border-primary/50'
-                          }`}
-                          onClick={() => {
-                            setSelectedCustomerId(profile.authorize_net_customer_profile_id);
-                            localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
-                          }}
-                        >
-                          <CardContent className="pt-6">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">
-                                  {profile.first_name} {profile.last_name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">{profile.email}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Profile ID: {profile.authorize_net_customer_profile_id}
-                                </p>
-                              </div>
-                              {selectedCustomerId === profile.authorize_net_customer_profile_id && (
-                                <CheckCircle className="h-5 w-5 text-primary" />
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Edit-specific identifiers */}
+                {/* For editPayment/editShipping: show payment/shipping ID first */}
                 {pageType === 'editPayment' && (
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="paymentProfileId">Payment Profile ID to edit</Label>
-                    <Input
-                      id="paymentProfileId"
-                      placeholder="e.g., 536896667"
-                      value={paymentProfileId}
-                      onChange={(e) => setPaymentProfileId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keep the Customer Profile ID set to the owner profile. Do not paste the payment ID there.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentProfileIdEdit" className="text-base font-semibold">Payment Profile ID</Label>
+                      <Input
+                        id="paymentProfileIdEdit"
+                        placeholder="e.g., 536896667"
+                        value={paymentProfileId}
+                        onChange={(e) => setPaymentProfileId(e.target.value)}
+                        className="text-base"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the Payment Profile ID you want to edit (from Get Profile tab)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerProfileIdEdit" className="text-sm">Customer Profile ID (Owner)</Label>
+                      <Input
+                        id="ownerProfileIdEdit"
+                        placeholder="e.g., 524732491"
+                        value={selectedCustomerId || ''}
+                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The customer profile that owns this payment method
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 {pageType === 'editShipping' && (
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="shippingAddressId">Shipping Address ID to edit</Label>
-                    <Input
-                      id="shippingAddressId"
-                      placeholder="e.g., 524355496"
-                      value={shippingAddressId}
-                      onChange={(e) => setShippingAddressId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Keep the Customer Profile ID set to the owner profile. Do not paste the shipping ID there.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shippingAddressIdEdit" className="text-base font-semibold">Shipping Address ID</Label>
+                      <Input
+                        id="shippingAddressIdEdit"
+                        placeholder="e.g., 524355496"
+                        value={shippingAddressId}
+                        onChange={(e) => setShippingAddressId(e.target.value)}
+                        className="text-base"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the Shipping Address ID you want to edit (from Get Profile tab)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerProfileIdShipEdit" className="text-sm">Customer Profile ID (Owner)</Label>
+                      <Input
+                        id="ownerProfileIdShipEdit"
+                        placeholder="e.g., 524732491"
+                        value={selectedCustomerId || ''}
+                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The customer profile that owns this shipping address
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* For other page types: show customer profile selection as before */}
+                {!['editPayment', 'editShipping'].includes(pageType) && (
+                  <div className="space-y-4">
+                    <Label>Select or Enter Customer Profile</Label>
+                    
+                    {/* Manual Profile ID Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="manualProfileId">Customer Profile ID</Label>
+                      <Input
+                        id="manualProfileId"
+                        placeholder="Enter profile ID manually..."
+                        value={selectedCustomerId || ''}
+                        onChange={(e) => {
+                          setSelectedCustomerId(e.target.value);
+                          if (e.target.value) {
+                            localStorage.setItem('selectedCustomerProfileId', e.target.value);
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        You can type a profile ID directly or select from the list below
+                      </p>
+                    </div>
+
+                    {/* Existing Profile List */}
+                    {customerProfiles.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No customer profiles found. Create one first or enter a profile ID above.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">Or select from existing profiles:</Label>
+                        {customerProfiles.map((profile) => (
+                          <Card
+                            key={profile.id}
+                            className={`cursor-pointer transition-colors ${
+                              selectedCustomerId === profile.authorize_net_customer_profile_id
+                                ? 'border-primary'
+                                : 'hover:border-primary/50'
+                            }`}
+                            onClick={() => {
+                              setSelectedCustomerId(profile.authorize_net_customer_profile_id);
+                              localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
+                            }}
+                          >
+                            <CardContent className="pt-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium">
+                                    {profile.first_name} {profile.last_name}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">{profile.email}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Profile ID: {profile.authorize_net_customer_profile_id}
+                                  </p>
+                                </div>
+                                {selectedCustomerId === profile.authorize_net_customer_profile_id && (
+                                  <CheckCircle className="h-5 w-5 text-primary" />
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
