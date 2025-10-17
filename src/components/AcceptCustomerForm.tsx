@@ -299,7 +299,9 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               Accept Customer (CIM)
             </h1>
-            <p className="text-muted-foreground">Customer Information Manager - Store and manage payment methods</p>
+            <p className="text-muted-foreground">
+              Hybrid integration using CIM API + Accept Customer Hosted Forms for SAQ-A compliance
+            </p>
           </div>
           <div className="ml-auto flex gap-2">
             <Badge variant="secondary" className="gap-2">
@@ -328,6 +330,44 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
               >
                 {debugMode ? 'Enabled' : 'Disabled'}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Integration Architecture Info */}
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Integration Architecture
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">Accept Customer Hosted Forms</Badge>
+                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Payment collection happens on Authorize.Net's secure hosted pages. 
+                Your server never touches sensitive card data.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Used for:</strong> Add Payment, Manage Profile (view/edit methods)
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs">Direct CIM API</Badge>
+                <span className="text-xs text-muted-foreground">Server-to-Server</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Direct API calls using tokenized references only. No sensitive card data in requests.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Used for:</strong> Create Profile, Charge Profile (using saved tokens)
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -379,19 +419,35 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="create">Create Profile</TabsTrigger>
-            <TabsTrigger value="add-payment">Add Payment</TabsTrigger>
-            <TabsTrigger value="manage">Manage Profile</TabsTrigger>
-            <TabsTrigger value="charge">Charge Profile</TabsTrigger>
+            <TabsTrigger value="create" className="flex flex-col gap-1 py-3">
+              <span>Create Profile</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="add-payment" className="flex flex-col gap-1 py-3">
+              <span>Add Payment</span>
+              <Badge variant="default" className="text-[10px] px-1.5 py-0">Hosted Form</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="manage" className="flex flex-col gap-1 py-3">
+              <span>Manage Profile</span>
+              <Badge variant="default" className="text-[10px] px-1.5 py-0">Hosted Form</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="charge" className="flex flex-col gap-1 py-3">
+              <span>Charge Profile</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
+            </TabsTrigger>
           </TabsList>
 
           {/* Create Profile Tab */}
           <TabsContent value="create" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Create Customer Profile</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Create Customer Profile
+                  <Badge variant="outline">Direct CIM API</Badge>
+                </CardTitle>
                 <CardDescription>
-                  Create a new customer profile in the Customer Information Manager
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">createCustomerProfileRequest</code> to create a customer profile via direct API call. 
+                  No payment information is collected at this stage.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -491,9 +547,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
           <TabsContent value="add-payment" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Add Payment Method</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Add Payment Method
+                  <Badge variant="default">Accept Customer Hosted Form</Badge>
+                </CardTitle>
                 <CardDescription>
-                  Add a new payment method to an existing customer profile using Authorize.Net's hosted form
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getHostedProfilePageRequest</code> with <code className="bg-muted px-1 py-0.5 rounded text-xs">/customer/addPayment</code> action. 
+                  Redirects to Authorize.Net's secure hosted page for SAQ-A compliant payment collection.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -569,9 +629,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
           <TabsContent value="manage" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Manage Customer Profile</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Manage Customer Profile
+                  <Badge variant="default">Accept Customer Hosted Form</Badge>
+                </CardTitle>
                 <CardDescription>
-                  View, edit, and manage payment methods for an existing customer profile
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getHostedProfilePageRequest</code> with <code className="bg-muted px-1 py-0.5 rounded text-xs">/customer/manage</code> action. 
+                  Opens Authorize.Net's hosted page where customers can view, add, edit, or delete all payment methods.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -647,9 +711,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
           <TabsContent value="charge" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Charge Customer Profile</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Charge Customer Profile
+                  <Badge variant="outline">Direct CIM API</Badge>
+                </CardTitle>
                 <CardDescription>
-                  Charge a saved payment method for a customer
+                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">createTransactionRequest</code> with <code className="bg-muted px-1 py-0.5 rounded text-xs">profileTransAuthOnly</code> transaction type. 
+                  Processes charges against saved payment methods via direct API call (not part of Accept Customer hosted solution).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
