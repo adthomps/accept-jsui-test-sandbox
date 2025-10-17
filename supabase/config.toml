@@ -21,9 +21,6 @@ verify_jwt = false
 [functions.create-customer-profile]
 verify_jwt = false
 
-[functions.add-payment-profile]
-verify_jwt = false
-
 [functions.manage-customer-profile]
 verify_jwt = false
 

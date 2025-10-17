@@ -67,8 +67,8 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [fetchedProfile, setFetchedProfile] = useState<FetchedProfile | null>(null);
   const [fetchProfileId, setFetchProfileId] = useState('');
   
-  // Hosted Profile Page states
-  const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'editPayment' | 'addShipping' | 'editShipping'>('manage');
+  // Hosted Profile Page states (editPayment/editShipping removed - use 'manage' instead)
+  const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'addShipping'>('manage');
   const [paymentProfileId, setPaymentProfileId] = useState('');
   const [shippingAddressId, setShippingAddressId] = useState('');
 
@@ -139,7 +139,8 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         // Auto-select and persist the new profile
         setSelectedCustomerId(newProfileId);
         localStorage.setItem('selectedCustomerProfileId', newProfileId);
-        setSelectedTab('add-payment');
+        setSelectedTab('manage');
+        setPageType('addPayment');
       } else {
         throw new Error(data.error || 'Failed to create customer profile');
       }
@@ -155,63 +156,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     }
   };
 
-  const handleAddPaymentMethod = async () => {
-    if (!selectedCustomerId) {
-      toast({
-        title: "Error",
-        description: "Please select a customer profile",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    setDebugInfo(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('add-payment-profile', {
-        body: {
-          customerProfileId: selectedCustomerId,
-          returnUrl: window.location.href,
-          cancelUrl: window.location.href,
-          debug: debugMode
-        }
-      });
-
-      if (error) throw error;
-
-      if (debugMode && data.debug) {
-        setDebugInfo(data.debug);
-      }
-
-      if (data.success && data.token) {
-        // Redirect to Authorize.Net hosted form to add payment method
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.gatewayUrl || 'https://test.authorize.net/customer/addPayment';
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = 'token';
-        tokenInput.value = data.token;
-        form.appendChild(tokenInput);
-        
-        document.body.appendChild(form);
-        form.submit();
-      } else {
-        throw new Error(data.error || 'Failed to get payment token');
-      }
-    } catch (error: any) {
-      console.error('Error adding payment method:', error);
-      toast({
-        title: "Error",
-        description: error.message || 'Failed to add payment method',
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed handleAddPaymentMethod - now using handleManageProfile with pageType='addPayment'
 
   const handleGetProfile = async () => {
     const profileId = fetchProfileId || selectedCustomerId;
@@ -273,24 +218,8 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       return;
     }
 
-    // Validate required fields based on page type
-    if (pageType === 'editPayment' && !paymentProfileId) {
-      toast({
-        title: "Error",
-        description: "Payment Profile ID is required for editing a payment method",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (pageType === 'editShipping' && !shippingAddressId) {
-      toast({
-        title: "Error",
-        description: "Shipping Address ID is required for editing a shipping address",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Note: editPayment and editShipping redirect to 'manage' page
+    // where users can select which payment/shipping to edit
 
     setLoading(true);
     setDebugInfo(null);
@@ -529,7 +458,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="create" className="flex flex-col gap-1 py-3">
               <span>Create Profile</span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
@@ -537,10 +466,6 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             <TabsTrigger value="get-profile" className="flex flex-col gap-1 py-3">
               <span>Get Profile</span>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">Direct API</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="add-payment" className="flex flex-col gap-1 py-3">
-              <span>Add Payment</span>
-              <Badge variant="default" className="text-[10px] px-1.5 py-0">Hosted Form</Badge>
             </TabsTrigger>
             <TabsTrigger value="manage" className="flex flex-col gap-1 py-3">
               <span>Hosted Page</span>
@@ -788,21 +713,20 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                                         Expires: {pp.expirationDate}
                                       </p>
                                     </div>
-                                    <Button
+                                     <Button
                                       size="sm"
                                       variant="outline"
                                       onClick={() => {
-                                        setPaymentProfileId(pp.customerPaymentProfileId);
-                                        setPageType('editPayment');
                                         setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                        setPageType('manage');
                                         setSelectedTab('manage');
                                         toast({
-                                          title: "Ready to Edit",
-                                          description: "Switched to Hosted Page tab with payment profile ID filled",
+                                          title: "Ready to Manage",
+                                          description: "Switched to Hosted Page tab (manage) to edit payment methods",
                                         });
                                       }}
                                     >
-                                      Edit This
+                                      Manage
                                     </Button>
                                   </div>
                                 </CardContent>
@@ -838,17 +762,16 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => {
-                                        setShippingAddressId(addr.customerAddressId);
-                                        setPageType('editShipping');
                                         setSelectedCustomerId(fetchedProfile.customerProfileId);
+                                        setPageType('manage');
                                         setSelectedTab('manage');
                                         toast({
-                                          title: "Ready to Edit",
-                                          description: "Switched to Hosted Page tab with shipping address ID filled",
+                                          title: "Ready to Manage",
+                                          description: "Switched to Hosted Page tab (manage) to edit shipping addresses",
                                         });
                                       }}
                                     >
-                                      Edit This
+                                      Manage
                                     </Button>
                                   </div>
                                 </CardContent>
@@ -873,87 +796,6 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             </Card>
           </TabsContent>
 
-          {/* Add Payment Method Tab */}
-          <TabsContent value="add-payment" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Add Payment Method
-                  <Badge variant="default">Accept Customer Hosted Form</Badge>
-                </CardTitle>
-                <CardDescription>
-                  Uses <code className="bg-muted px-1 py-0.5 rounded text-xs">getHostedProfilePageRequest</code> with <code className="bg-muted px-1 py-0.5 rounded text-xs">/customer/addPayment</code> action. 
-                  Redirects to Authorize.Net's secure hosted page for SAQ-A compliant payment collection.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    This will redirect you to Authorize.Net's secure hosted page to add a payment method. You'll be returned here after completion.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-4">
-                  {customerProfiles.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No customer profiles found. Create one first.
-                    </div>
-                  ) : (
-                    customerProfiles.map((profile) => (
-                      <Card
-                        key={profile.id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedCustomerId === profile.authorize_net_customer_profile_id
-                            ? 'border-primary'
-                            : 'hover:border-primary/50'
-                        }`}
-                        onClick={() => {
-                          setSelectedCustomerId(profile.authorize_net_customer_profile_id);
-                          localStorage.setItem('selectedCustomerProfileId', profile.authorize_net_customer_profile_id);
-                        }}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {profile.first_name} {profile.last_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">{profile.email}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Profile ID: {profile.authorize_net_customer_profile_id}
-                              </p>
-                            </div>
-                            {selectedCustomerId === profile.authorize_net_customer_profile_id && (
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  onClick={handleAddPaymentMethod}
-                  disabled={loading || !selectedCustomerId}
-                  className="w-full"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating Token...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Add Payment Method
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
 
           {/* Manage Profile Tab / Hosted Profile Page */}
           <TabsContent value="manage" className="space-y-4">
@@ -972,7 +814,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Select the page type below. For editing specific payment or shipping profiles, first use the "Get Profile" tab to retrieve the profile IDs.
+                    Select the page type below. For addPayment/addShipping, you can specify the customer profile ID to add to.
                   </AlertDescription>
                 </Alert>
                 
@@ -996,59 +838,18 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                           <span className="text-xs text-muted-foreground">- New Payment Method</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value="editPayment">
-                        <div className="flex items-center gap-2">
-                          <span>Edit Payment</span>
-                          <span className="text-xs text-muted-foreground">- Specific Payment</span>
-                        </div>
-                      </SelectItem>
                       <SelectItem value="addShipping">
                         <div className="flex items-center gap-2">
                           <span>Add Shipping</span>
                           <span className="text-xs text-muted-foreground">- New Shipping Address</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value="editShipping">
-                        <div className="flex items-center gap-2">
-                          <span>Edit Shipping</span>
-                          <span className="text-xs text-muted-foreground">- Specific Shipping</span>
-                        </div>
-                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Note: To edit payment methods or shipping addresses, use "Manage" which allows editing any saved item.
+                  </p>
                 </div>
-
-                {/* Conditional Payment Profile ID Field */}
-                {pageType === 'editPayment' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="paymentProfileId">Payment Profile ID *</Label>
-                    <Input
-                      id="paymentProfileId"
-                      placeholder="e.g., 523421899"
-                      value={paymentProfileId}
-                      onChange={(e) => setPaymentProfileId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use "Get Profile" tab to find payment profile IDs
-                    </p>
-                  </div>
-                )}
-
-                {/* Conditional Shipping Address ID Field */}
-                {pageType === 'editShipping' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="shippingAddressId">Shipping Address ID *</Label>
-                    <Input
-                      id="shippingAddressId"
-                      placeholder="e.g., 523421900"
-                      value={shippingAddressId}
-                      onChange={(e) => setShippingAddressId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use "Get Profile" tab to find shipping address IDs
-                    </p>
-                  </div>
-                )}
 
                 {/* Customer Profile Selection */}
                 <div className="space-y-4">

@@ -39,32 +39,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate required fields based on page type
-    if (pageType === 'editPayment' && !paymentProfileId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Payment Profile ID is required for editPayment page type',
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (pageType === 'editShipping' && !shippingAddressId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Shipping Address ID is required for editShipping page type',
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     console.log('Getting hosted profile token for:', {
       customerProfileId,
       pageType,
-      paymentProfileId,
-      shippingAddressId,
     });
 
     // Get Authorize.Net credentials from environment
@@ -115,6 +92,8 @@ Deno.serve(async (req) => {
     });
 
     // Build the base token request
+    // Note: editPayment and editShipping page types use the 'manage' page instead
+    // as Authorize.Net doesn't support direct editing via specific page types
     const tokenRequest: any = {
       getHostedProfilePageRequest: {
         merchantAuthentication: {
@@ -127,16 +106,6 @@ Deno.serve(async (req) => {
         },
       },
     };
-
-    // Add payment profile ID for editPayment
-    if (pageType === 'editPayment' && paymentProfileId) {
-      tokenRequest.getHostedProfilePageRequest.customerPaymentProfileId = paymentProfileId;
-    }
-
-    // Add shipping address ID for editShipping
-    if (pageType === 'editShipping' && shippingAddressId) {
-      tokenRequest.getHostedProfilePageRequest.customerShippingAddressId = shippingAddressId;
-    }
 
     console.log('Sending token request to Authorize.Net API');
 
@@ -156,12 +125,14 @@ Deno.serve(async (req) => {
     // Check if the request was successful
     if (responseData.messages?.resultCode === 'Ok' && responseData.token) {
       // Map page types to gateway URLs
+      // Note: editPayment and editShipping redirect to manage page
+      // as Authorize.Net doesn't support direct editing via API
       const gatewayUrlMap: Record<string, string> = {
         manage: 'https://test.authorize.net/customer/manage',
         addPayment: 'https://test.authorize.net/customer/addPayment',
-        editPayment: 'https://test.authorize.net/customer/editPayment',
+        editPayment: 'https://test.authorize.net/customer/manage',
         addShipping: 'https://test.authorize.net/customer/addShipping',
-        editShipping: 'https://test.authorize.net/customer/editShipping',
+        editShipping: 'https://test.authorize.net/customer/manage',
       };
 
       const gatewayUrl = gatewayUrlMap[pageType] || gatewayUrlMap.manage;
