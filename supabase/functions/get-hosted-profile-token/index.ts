@@ -88,38 +88,30 @@ Deno.serve(async (req) => {
       : undefined;
 
     // Build the hosted profile settings
-    const hostedProfileSettings: any[] = [];
+    const settings: any[] = [];
 
     if (finalReturnUrl) {
-      hostedProfileSettings.push({
-        setting: {
-          settingName: 'hostedProfileReturnUrl',
-          settingValue: finalReturnUrl,
-        },
+      settings.push({
+        settingName: 'hostedProfileReturnUrl',
+        settingValue: finalReturnUrl,
       });
     }
 
     if (finalCancelUrl) {
-      hostedProfileSettings.push({
-        setting: {
-          settingName: 'hostedProfileReturnUrlText',
-          settingValue: 'Continue',
-        },
+      settings.push({
+        settingName: 'hostedProfileReturnUrlText',
+        settingValue: 'Continue',
       });
-      hostedProfileSettings.push({
-        setting: {
-          settingName: 'hostedProfilePageBorderVisible',
-          settingValue: 'true',
-        },
+      settings.push({
+        settingName: 'hostedProfilePageBorderVisible',
+        settingValue: 'true',
       });
     }
 
     // Add validation mode
-    hostedProfileSettings.push({
-      setting: {
-        settingName: 'hostedProfileValidationMode',
-        settingValue: 'testMode',
-      },
+    settings.push({
+      settingName: 'hostedProfileValidationMode',
+      settingValue: 'testMode',
     });
 
     // Build the base token request
@@ -130,7 +122,9 @@ Deno.serve(async (req) => {
           transactionKey: transactionKey,
         },
         customerProfileId: customerProfileId,
-        hostedProfileSettings: hostedProfileSettings,
+        hostedProfileSettings: {
+          setting: settings,
+        },
       },
     };
 
