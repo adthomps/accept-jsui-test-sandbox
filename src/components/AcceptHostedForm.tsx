@@ -265,9 +265,27 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       setDebugInfo((prev) => ({ ...prev, error }));
 
       let errorMessage = "Failed to initialize payment. Please try again.";
+      let errorTitle = "Payment Initialization Error";
 
-      // Enhanced error message handling
-      if (error.message) {
+      // Try to get the actual error from the response context
+      if (error.context?.body) {
+        try {
+          const errorBody = typeof error.context.body === 'string' 
+            ? JSON.parse(error.context.body) 
+            : error.context.body;
+          if (errorBody?.error) {
+            errorMessage = errorBody.error;
+            if (errorBody.error.includes("No customer profile found")) {
+              errorTitle = "Customer Not Found";
+            }
+          }
+        } catch (e) {
+          // Parsing failed, continue with default handling
+        }
+      }
+
+      // Fallback to enhanced error message handling
+      if (errorMessage === "Failed to initialize payment. Please try again." && error.message) {
         if (error.message.includes("Edge Function returned a non-2xx status code")) {
           errorMessage = "Payment service error. Check debug panel for details.";
         } else if (error.message.includes("Failed to fetch")) {
@@ -278,7 +296,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       }
 
       toast({
-        title: "Payment Initialization Error",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
