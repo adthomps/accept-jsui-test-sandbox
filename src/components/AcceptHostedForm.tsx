@@ -794,56 +794,52 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             </CardContent>
           </Card>
 
-          {/* Payment Settings */}
+          {/* Payment Options */}
           <Card className="shadow-card bg-gradient-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                Payment Settings
+                {isReturningCustomer ? "Payment Options" : "Payment Settings"}
               </CardTitle>
-              <CardDescription>Configure hosted payment page options</CardDescription>
+              <CardDescription>
+                {isReturningCustomer 
+                  ? "Available payment methods for this transaction"
+                  : "Configure hosted payment page options"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {isReturningCustomer ? (
-                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                  <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <AlertDescription className="text-sm">
-                    <strong>Returning Customer:</strong> Payment will be linked to profile ({existingCustomerEmail}).
-                    {saveNewPaymentMethod 
-                      ? " New payment methods will be saved for future use."
-                      : " New payment methods will NOT be saved."}
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch 
-                      id="create-profile" 
-                      checked={createProfile} 
-                      onCheckedChange={setCreateProfile}
-                    />
-                    <Label htmlFor="create-profile">
-                      Save payment method for future use
-                    </Label>
+              {!isReturningCustomer && (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="create-profile" 
+                        checked={createProfile} 
+                        onCheckedChange={setCreateProfile}
+                      />
+                      <Label htmlFor="create-profile">
+                        Save payment method for future use
+                      </Label>
+                    </div>
+
+                    {createProfile ? (
+                      <Alert>
+                        <Shield className="h-4 w-4" />
+                        <AlertDescription>
+                          A new customer profile will be created in Authorize.Net CIM, and the payment method will be 
+                          saved for faster future transactions.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Payment will be processed as a one-time transaction. No customer profile will be created.
+                      </p>
+                    )}
                   </div>
 
-                  {createProfile ? (
-                    <Alert>
-                      <Shield className="h-4 w-4" />
-                      <AlertDescription>
-                        A new customer profile will be created in Authorize.Net CIM, and the payment method will be 
-                        saved for faster future transactions.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Payment will be processed as a one-time transaction. No customer profile will be created.
-                    </p>
-                  )}
-                </div>
+                  <Separator />
+                </>
               )}
-
-              <Separator />
 
               <div className="space-y-3">
                 <h4 className="font-medium">Payment Options Available</h4>
