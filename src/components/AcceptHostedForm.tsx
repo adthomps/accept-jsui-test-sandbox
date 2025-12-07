@@ -676,18 +676,37 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Switch id="create-profile" checked={createProfile} onCheckedChange={setCreateProfile} />
-                  <Label htmlFor="create-profile">Save payment method for future use</Label>
+                  <Switch 
+                    id="create-profile" 
+                    checked={createProfile} 
+                    onCheckedChange={setCreateProfile}
+                    disabled={isReturningCustomer}
+                  />
+                  <Label htmlFor="create-profile" className={isReturningCustomer ? "text-muted-foreground" : ""}>
+                    Save payment method for future use
+                  </Label>
                 </div>
 
-                {createProfile && (
+                {isReturningCustomer ? (
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-sm">
+                      <strong>Returning Customer:</strong> Payment will be linked to the existing customer profile 
+                      ({existingCustomerEmail}). The new payment method will be added to their saved methods.
+                    </AlertDescription>
+                  </Alert>
+                ) : createProfile ? (
                   <Alert>
                     <Shield className="h-4 w-4" />
                     <AlertDescription>
-                      Customer can choose to save their payment information securely with Authorize.Net for faster
-                      future transactions.
+                      A new customer profile will be created in Authorize.Net CIM, and the payment method will be 
+                      saved for faster future transactions.
                     </AlertDescription>
                   </Alert>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Payment will be processed as a one-time transaction. No customer profile will be created.
+                  </p>
                 )}
               </div>
 
