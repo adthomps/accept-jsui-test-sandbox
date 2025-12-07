@@ -9,7 +9,6 @@ import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
 import AcceptHostedForm from './AcceptHostedForm';
 import AcceptCustomerForm from './AcceptCustomerForm';
-import SIMForm from './SIMForm';
 
 const PaymentMethodSelector = () => {
   const { toast } = useToast();
@@ -25,10 +24,6 @@ const PaymentMethodSelector = () => {
 
   if (selectedMethod === 'accepthosted') {
     return <AcceptHostedForm onBack={() => setSelectedMethod(null)} />;
-  }
-
-  if (selectedMethod === 'sim') {
-    return <SIMForm onBack={() => setSelectedMethod(null)} />;
   }
 
   if (selectedMethod === 'acceptcustomer') {
@@ -56,17 +51,16 @@ const PaymentMethodSelector = () => {
         </div>
 
         {/* Method Comparison */}
-        <Tabs defaultValue="comparison" className="w-full max-w-6xl">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="comparison" className="w-full max-w-5xl">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="comparison">Compare Methods</TabsTrigger>
             <TabsTrigger value="acceptjs">AcceptJS Details</TabsTrigger>
             <TabsTrigger value="acceptui">AcceptUI Details</TabsTrigger>
             <TabsTrigger value="accepthosted">Accept Hosted Details</TabsTrigger>
-            <TabsTrigger value="sim">SIM (Legacy) Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="comparison" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -226,45 +220,6 @@ const PaymentMethodSelector = () => {
                 </CardFooter>
               </Card>
 
-              <Card className="border-muted/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    SIM (Legacy)
-                    <Badge variant="destructive">Deprecated</Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Server Integration Method - Direct form submission
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Key Features:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Simple HTML forms</li>
-                      <li>• No JavaScript required</li>
-                      <li>• Direct submission</li>
-                      <li>• Basic implementation</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Migration Path:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Upgrade to AcceptJS</li>
-                      <li>• Consider Accept Hosted</li>
-                      <li>• Enhanced security benefits</li>
-                    </ul>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    onClick={() => setSelectedMethod('sim')}
-                    className="w-full"
-                    variant="destructive"
-                  >
-                    Test SIM (Legacy)
-                  </Button>
-                </CardFooter>
-              </Card>
             </div>
           </TabsContent>
 
