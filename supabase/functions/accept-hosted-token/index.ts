@@ -80,12 +80,15 @@ serve(async (req) => {
       : (requestBody as NewCustomerRequest).createProfile;
     const addPaymentToProfile = isReturning 
       ? (requestBody as ReturningCustomerRequest).addPaymentToProfile 
-      : createProfile;  // For new customers, this is same as createProfile
+      : false;  // For new customers, we handle profile creation differently
     
     // Extract amount based on request type
     const amount = isReturning 
       ? (requestBody as ReturningCustomerRequest).amount 
       : (requestBody as NewCustomerRequest).customerInfo.amount;
+    
+    const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
+    const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
     
     // Generate unique reference ID for this transaction (max 20 chars for Authorize.Net)
     const referenceId = `${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 8)}`;
@@ -180,10 +183,118 @@ serve(async (req) => {
       // New customer flow
       const customerInfo = (requestBody as NewCustomerRequest).customerInfo;
       
+      // If user wants to save their payment method, create a customer profile first
+      // This is required because addPaymentProfile only works with existing customerProfileId
+      if (createProfile && apiLoginId && transactionKey) {
+        console.log('🔵 Step 2a: Creating customer profile for new customer (save payment method requested)');
+        
+        const createProfileRequest = {
+          createCustomerProfileRequest: {
+            merchantAuthentication: {
+              name: apiLoginId,
+              transactionKey: transactionKey
+            },
+            profile: {
+              merchantCustomerId: `MC_${Date.now()}`,
+              email: customerInfo.email,
+              description: `${customerInfo.firstName} ${customerInfo.lastName}`
+            },
+            validationMode: 'none'
+          }
+        };
+        
+        try {
+          const profileResponse = await fetch('https://apitest.authorize.net/xml/v1/request.api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(createProfileRequest)
+          });
+          
+          const profileResult = await profileResponse.json();
+          console.log('📥 Create profile response:', JSON.stringify(profileResult, null, 2));
+          
+          // Handle the response - check both possible response structures
+          const profileRoot = profileResult?.createCustomerProfileResponse ?? profileResult;
+          
+          if (profileRoot?.messages?.resultCode === 'Ok' && profileRoot?.customerProfileId) {
+            customerProfileId = profileRoot.customerProfileId;
+            console.log(`✅ Created new customer profile: ${customerProfileId}`);
+            
+            // Store the profile in our database
+            if (supabaseUrl && supabaseServiceKey) {
+              try {
+                await fetch(`${supabaseUrl}/rest/v1/customer_profiles`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                    'apikey': supabaseServiceKey,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                  },
+                  body: JSON.stringify({
+                    email: customerInfo.email,
+                    authorize_net_customer_profile_id: customerProfileId,
+                    first_name: customerInfo.firstName,
+                    last_name: customerInfo.lastName,
+                    phone: customerInfo.phone,
+                    address: customerInfo.address,
+                    city: customerInfo.city,
+                    state: customerInfo.state,
+                    zip_code: customerInfo.zipCode,
+                    country: customerInfo.country || 'US'
+                  })
+                });
+                console.log('✅ Customer profile stored in database');
+              } catch (dbError) {
+                console.warn('⚠️ Error storing customer profile in database:', dbError);
+              }
+            }
+          } else if (profileRoot?.messages?.message?.[0]?.code === 'E00039') {
+            // Duplicate profile error - try to get the existing profile
+            console.log('⚠️ Customer profile already exists, looking up existing profile...');
+            
+            // Extract the existing profile ID from the error message if available
+            const existingProfileId = profileRoot?.customerProfileId;
+            if (existingProfileId) {
+              customerProfileId = existingProfileId;
+              console.log(`✅ Using existing customer profile: ${customerProfileId}`);
+            } else {
+              // Try to get profile by email from our database
+              if (supabaseUrl && supabaseServiceKey) {
+                const lookupResponse = await fetch(
+                  `${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(customerInfo.email)}&select=authorize_net_customer_profile_id`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${supabaseServiceKey}`,
+                      'apikey': supabaseServiceKey,
+                      'Content-Type': 'application/json'
+                    }
+                  }
+                );
+                
+                if (lookupResponse.ok) {
+                  const profiles = await lookupResponse.json();
+                  if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
+                    customerProfileId = profiles[0].authorize_net_customer_profile_id;
+                    console.log(`✅ Found existing customer profile in database: ${customerProfileId}`);
+                  }
+                }
+              }
+            }
+          } else {
+            console.warn('⚠️ Failed to create customer profile:', profileRoot?.messages);
+            // Continue without profile - payment will still work, just won't save card
+          }
+        } catch (profileError) {
+          console.error('❌ Error creating customer profile:', profileError);
+          // Continue without profile - payment will still work, just won't save card
+        }
+      }
+      
       // Store customer data in pending_payments
       if (supabaseUrl && supabaseServiceKey) {
         try {
-          console.log('🔵 Step 2: Storing customer data in pending_payments');
+          console.log('🔵 Step 2b: Storing customer data in pending_payments');
           const storeResponse = await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
             method: 'POST',
             headers: {
@@ -194,7 +305,10 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               reference_id: referenceId,
-              customer_info: customerInfo,
+              customer_info: {
+                ...customerInfo,
+                ...(customerProfileId ? { existingCustomerProfileId: customerProfileId } : {})
+              },
               amount: customerInfo.amount,
               create_profile: createProfile || false
             })
@@ -210,9 +324,6 @@ serve(async (req) => {
         }
       }
     }
-
-    const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
-    const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
 
     if (!apiLoginId || !transactionKey) {
       throw new Error('Authorize.Net credentials not configured');
@@ -319,10 +430,11 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: false,
                 requiredEmail: false,
-                // addPaymentProfile enables saving payment methods
+                // addPaymentProfile enables saving payment methods to the profile
+                // This only works when customerProfileId is included in transactionRequest
                 // For returning customers: adds new card to their existing profile
-                // For new customers: creates new profile if createProfile=true
-                addPaymentProfile: addPaymentToProfile || false
+                // For new customers with createProfile=true: we created profile above, so add to it
+                addPaymentProfile: !!customerProfileId
               })
             },
             {
