@@ -280,10 +280,22 @@ const PaymentMethodSelector = () => {
           <TabsContent value="acceptjs" className="space-y-6">
             <Card className="shadow-card bg-gradient-card">
               <CardHeader>
-                <CardTitle>AcceptJS Technical Details</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle>AcceptJS Technical Details</CardTitle>
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                    <ShieldAlert className="h-3 w-3" />
+                    SAQ A-EP
+                  </Badge>
+                </div>
                 <CardDescription>
                   Client-side tokenization for custom payment form integration
                 </CardDescription>
+                <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <strong>Higher PCI Scope:</strong> Card data enters your page before tokenization. 
+                    Requires SAQ A-EP self-assessment questionnaire (22 questions).
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -346,10 +358,22 @@ const PaymentMethodSelector = () => {
           <TabsContent value="acceptui" className="space-y-6">
             <Card className="shadow-card bg-gradient-card">
               <CardHeader>
-                <CardTitle>AcceptUI Technical Details</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle>AcceptUI Technical Details</CardTitle>
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    SAQ-A
+                  </Badge>
+                </div>
                 <CardDescription>
                   Hosted modal lightbox for quick and secure payment integration
                 </CardDescription>
+                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                    <strong>Lowest PCI Scope:</strong> Card data never touches your page. 
+                    Only 22 questions in SAQ-A self-assessment.
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -412,10 +436,22 @@ const PaymentMethodSelector = () => {
           <TabsContent value="accepthosted" className="space-y-6">
             <Card className="shadow-card bg-gradient-card">
               <CardHeader>
-                <CardTitle>Accept Hosted Technical Details</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle>Accept Hosted Technical Details</CardTitle>
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    SAQ-A
+                  </Badge>
+                </div>
                 <CardDescription>
                   Flexible hosted payment with multiple display methods and customer profile support
                 </CardDescription>
+                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                    <strong>Lowest PCI Scope:</strong> All payment data collection happens on Authorize.Net's hosted pages. 
+                    Simplest compliance with SAQ-A (22 questions).
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Display Methods Section */}
@@ -536,10 +572,22 @@ const PaymentMethodSelector = () => {
           <TabsContent value="acceptcustomer" className="space-y-6">
             <Card className="shadow-card bg-gradient-card">
               <CardHeader>
-                <CardTitle>Accept Customer (CIM) Technical Details</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle>Accept Customer (CIM) Technical Details</CardTitle>
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    SAQ-A
+                  </Badge>
+                </div>
                 <CardDescription>
                   Customer Information Manager for stored payment profiles
                 </CardDescription>
+                <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                    <strong>Lowest PCI Scope:</strong> Hosted forms for card collection, tokenized references for API calls. 
+                    SAQ-A compliant for payment method management.
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">

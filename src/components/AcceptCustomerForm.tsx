@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw, Code, ChevronDown } from 'lucide-react';
+import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw, Code, ChevronDown, ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -407,16 +407,27 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         {/* Integration Architecture Info */}
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Integration Architecture
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Integration Architecture
+              </CardTitle>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                SAQ-A
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                <strong>Lowest PCI Scope:</strong> Card data collection uses hosted forms. 
+                Direct API calls use only tokenized profile references.
+              </p>
+            </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="default" className="text-xs">Accept Customer Hosted Forms</Badge>
-                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Payment collection happens on Authorize.Net's secure hosted pages. 
