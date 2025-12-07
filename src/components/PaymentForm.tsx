@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark, Code, ChevronDown } from 'lucide-react';
+import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark, Code, ChevronDown, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
@@ -400,16 +400,27 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
         {/* Integration Architecture Info */}
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Integration Architecture
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Integration Architecture
+              </CardTitle>
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                <ShieldAlert className="h-3 w-3" />
+                SAQ A-EP
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <strong>Higher PCI Scope:</strong> Card data enters your page before tokenization. 
+                You must complete SAQ A-EP self-assessment questionnaire.
+              </p>
+            </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="default" className="text-xs">Accept.js Client-Side</Badge>
-                <span className="text-xs text-muted-foreground">SAQ A-EP Compliant</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Payment data is tokenized directly in the browser using Authorize.Net's Accept.js library.
