@@ -219,7 +219,11 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: false,
                 requiredEmail: false,
-                addPaymentProfile: customerProfileId ? true : false
+                // Only create a new payment profile if:
+                // 1. User wants to save (createProfile = true) AND
+                // 2. Customer doesn't already have a profile (no customerProfileId)
+                // If returning customer (has customerProfileId), don't create a duplicate profile
+                addPaymentProfile: createProfile && !customerProfileId
               })
             },
             {
