@@ -481,6 +481,65 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           </div>
         </div>
 
+        {/* Debug Mode Toggle */}
+        <Card className="shadow-card bg-gradient-card border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
+                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
+                  <Code className="h-4 w-4 text-primary" />
+                  Debug Mode - View API request/response details
+                </Label>
+              </div>
+              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
+            </div>
+            {debugMode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                When enabled, the payment token will be generated but you won't be redirected. Review the debug panel to inspect the API request/response.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Integration Architecture Info */}
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Integration Architecture
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">Accept Hosted</Badge>
+                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Payment collection happens on Authorize.Net's secure hosted pages.
+                Your server only generates a session token - no card data handling.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Flow:</strong> Server Token → Display Form → Payment → Return/Callback
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs">Customer Profiles</Badge>
+                <span className="text-xs text-muted-foreground">CIM Integration</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Supports both new customers and returning customers with saved payment methods.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Supports:</strong> One-time Payments, Profile Creation, Saved Payment Methods
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Display Method Selector */}
         <Card className="border-primary/20 bg-gradient-card shadow-card">
           <CardHeader>
@@ -551,74 +610,6 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                   <strong>iFrameCommunicator:</strong> Uses <code className="bg-muted px-1 rounded">/iFrameCommunicator.html</code> for cross-origin messaging between your page and the hosted form.
                 </AlertDescription>
               </Alert>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Integration Architecture Info */}
-        <Card className="border-blue-500/50 bg-blue-500/5">
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Integration Architecture
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="default" className="text-xs">
-                  {displayMode === 'redirect' ? 'Full Page Redirect' : displayMode === 'lightbox' ? 'Lightbox Modal' : 'Embedded iFrame'}
-                </Badge>
-                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {displayMode === 'redirect' 
-                  ? "Customer is redirected to Authorize.Net's fully hosted payment page. Your server only generates the session token - no card data handling."
-                  : "Payment form displayed via secure iFrame. Your page communicates via postMessage - no card data touches your site."
-                }
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Flow:</strong> {displayMode === 'redirect' 
-                  ? "Server Token → Redirect to Authorize.Net → Payment → Return URL"
-                  : "Server Token → iFrame Display → postMessage Events → Transaction Complete"
-                }
-              </p>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className="text-xs">Customer Profiles</Badge>
-                <span className="text-xs text-muted-foreground">CIM Integration</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Supports both new customers and returning customers with saved payment methods.
-                Returning customers can use existing profiles or add new payment methods.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Supports:</strong> One-time Payments, Profile Creation, Saved Payment Methods
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Debug Mode Toggle */}
-        <Card className="shadow-card bg-gradient-card border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
-                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
-                  <Code className="h-4 w-4 text-primary" />
-                  Debug Mode - Stop before redirecting to Authorize.Net
-                </Label>
-              </div>
-              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
-            </div>
-            {debugMode && (
-              <p className="text-xs text-muted-foreground mt-2">
-                When enabled, the payment token will be generated but you won't be redirected. Review the debug panel to
-                inspect the API request/response.
-              </p>
             )}
           </CardContent>
         </Card>
