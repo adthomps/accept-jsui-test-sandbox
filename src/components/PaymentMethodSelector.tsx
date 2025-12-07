@@ -75,10 +75,19 @@ const PaymentMethodSelector = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
                   <div>
+                    <h4 className="font-medium mb-2">Display Methods:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                        Custom Form (your design)
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Client-side tokenization</li>
-                      <li>• Custom form design</li>
+                      <li>• Full design control</li>
                       <li>• Credit card & eCheck</li>
                       <li>• Real-time validation</li>
                     </ul>
@@ -87,9 +96,7 @@ const PaymentMethodSelector = () => {
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Custom branded checkout</li>
-                      <li>• E-commerce platforms</li>
-                      <li>• Design flexibility needs</li>
-                      <li>• Mobile web payments</li>
+                      <li>• Maximum design flexibility</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -116,6 +123,15 @@ const PaymentMethodSelector = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
                   <div>
+                    <h4 className="font-medium mb-2">Display Methods:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                        Lightbox Modal
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Iframe-based modal</li>
@@ -129,8 +145,6 @@ const PaymentMethodSelector = () => {
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Quick integration</li>
                       <li>• Minimal PCI scope</li>
-                      <li>• Standard payment forms</li>
-                      <li>• Low dev resources</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -198,6 +212,19 @@ const PaymentMethodSelector = () => {
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
                   <div>
+                    <h4 className="font-medium mb-2">Display Methods:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                        Hosted Profile Pages
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                        Direct API Calls
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Tokenized storage</li>
@@ -211,8 +238,6 @@ const PaymentMethodSelector = () => {
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Subscription billing</li>
                       <li>• Repeat customers</li>
-                      <li>• Saved payment methods</li>
-                      <li>• Recurring payments</li>
                     </ul>
                   </div>
                 </CardContent>
