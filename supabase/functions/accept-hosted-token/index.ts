@@ -141,6 +141,38 @@ serve(async (req) => {
 
     // Use simple return URLs (Authorize.Net will append transaction data)
     
+    // Build transactionRequest with correct element ordering per Authorize.Net XML schema:
+    // transactionType, amount, profile (if exists), customer, billTo
+    // The profile element MUST come before customer and billTo!
+    const transactionRequest: any = {
+      transactionType: "authCaptureTransaction",
+      amount: customerInfo.amount.toString(),
+    };
+    
+    // Add profile BEFORE customer/billTo if we have an existing customerProfileId
+    // This displays the customer's saved payment methods on the hosted form
+    if (customerProfileId) {
+      transactionRequest.profile = {
+        customerProfileId: customerProfileId
+      };
+      console.log('✅ Adding existing customer profile to transactionRequest:', customerProfileId);
+    }
+    
+    // Add customer and billTo AFTER profile
+    transactionRequest.customer = {
+      email: customerInfo.email,
+    };
+    transactionRequest.billTo = {
+      firstName: customerInfo.firstName,
+      lastName: customerInfo.lastName,
+      company: customerInfo.company || '',
+      address: customerInfo.address,
+      city: customerInfo.city,
+      state: customerInfo.state,
+      zip: customerInfo.zipCode,
+      country: customerInfo.country === 'US' ? 'USA' : customerInfo.country,
+    };
+    
     // Create hosted payment page token request
     const tokenRequest: any = {
       getHostedPaymentPageRequest: {
@@ -149,34 +181,18 @@ serve(async (req) => {
           transactionKey: transactionKey,
         },
         refId: referenceId,
-        transactionRequest: {
-          transactionType: "authCaptureTransaction",
-          amount: customerInfo.amount.toString(),
-          customer: {
-            email: customerInfo.email,
-          },
-            billTo: {
-              firstName: customerInfo.firstName,
-              lastName: customerInfo.lastName,
-              company: customerInfo.company || '',
-              address: customerInfo.address,
-              city: customerInfo.city,
-              state: customerInfo.state,
-              zip: customerInfo.zipCode,
-              country: customerInfo.country === 'US' ? 'USA' : customerInfo.country,
-            },
-        },
+        transactionRequest,
         hostedPaymentSettings: {
           setting: [
             {
               settingName: "hostedPaymentReturnOptions",
-            settingValue: JSON.stringify({
-              showReceipt: true,
-              url: returnUrlWithRef,
-              urlText: "Continue",
-              cancelUrl: cancelUrlClean,
-              cancelUrlText: "Cancel"
-            })
+              settingValue: JSON.stringify({
+                showReceipt: true,
+                url: returnUrlWithRef,
+                urlText: "Continue",
+                cancelUrl: cancelUrlClean,
+                cancelUrlText: "Cancel"
+              })
             },
             {
               settingName: "hostedPaymentButtonOptions",
@@ -223,11 +239,10 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: false,
                 requiredEmail: false,
-                // Only create a new payment profile if:
-                // 1. User wants to save (createProfile = true) AND
-                // 2. Customer doesn't already have a profile (no customerProfileId)
-                // If returning customer (has customerProfileId), don't create a duplicate profile
-                addPaymentProfile: createProfile && !customerProfileId
+                // addPaymentProfile enables customers to save NEW payment methods to their profile
+                // For returning customers, this adds to their existing profile
+                // For new customers (with createProfile=true), a new profile is created
+                addPaymentProfile: createProfile || !!customerProfileId
               })
             },
             {
@@ -243,10 +258,7 @@ serve(async (req) => {
       },
     };
 
-    // Note: getHostedPaymentPageRequest does NOT support linking to existing customer profiles
-    // via transactionRequest.profile. The hosted payment page only collects new payment info.
-    // If we have an existing customerProfileId, we store it in pending_payments for 
-    // the webhook to use when processing the completed transaction.
+    // Store customerProfileId in pending_payments for webhook processing
     if (customerProfileId && supabaseUrl && supabaseServiceKey) {
       try {
         // Update the pending_payments record with the existing customer profile ID
