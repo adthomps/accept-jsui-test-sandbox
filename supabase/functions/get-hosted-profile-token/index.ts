@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
       shippingAddressId,
       returnUrl,
       cancelUrl,
+      displayMode = 'redirect',
+      iframeCommunicatorUrl,
       debug = false,
     } = await req.json();
 
@@ -42,6 +44,7 @@ Deno.serve(async (req) => {
     console.log('Getting hosted profile token for:', {
       customerProfileId,
       pageType,
+      displayMode,
     });
 
     // Get Authorize.Net credentials from environment
@@ -67,23 +70,32 @@ Deno.serve(async (req) => {
     // Build the hosted profile settings
     const settings: any[] = [];
 
-    if (finalReturnUrl) {
+    // For redirect mode, add return URL settings
+    if (displayMode === 'redirect' && finalReturnUrl) {
       settings.push({
         settingName: 'hostedProfileReturnUrl',
         settingValue: finalReturnUrl,
       });
-    }
-
-    if (finalCancelUrl) {
       settings.push({
         settingName: 'hostedProfileReturnUrlText',
         settingValue: 'Continue',
       });
-      settings.push({
-        settingName: 'hostedProfilePageBorderVisible',
-        settingValue: 'true',
-      });
     }
+
+    // For iframe/lightbox modes, add iFrameCommunicator URL
+    if ((displayMode === 'iframe' || displayMode === 'lightbox') && iframeCommunicatorUrl) {
+      settings.push({
+        settingName: 'hostedProfileIFrameCommunicatorUrl',
+        settingValue: iframeCommunicatorUrl,
+      });
+      console.log('Added hostedProfileIFrameCommunicatorUrl:', iframeCommunicatorUrl);
+    }
+
+    // Page border visibility - hide for iframe/lightbox for cleaner look
+    settings.push({
+      settingName: 'hostedProfilePageBorderVisible',
+      settingValue: displayMode === 'redirect' ? 'true' : 'false',
+    });
 
     // Add validation mode
     settings.push({
@@ -91,9 +103,15 @@ Deno.serve(async (req) => {
       settingValue: 'testMode',
     });
 
+    // Optionally hide the header for embedded modes
+    if (displayMode !== 'redirect') {
+      settings.push({
+        settingName: 'hostedProfileHeadingBgColor',
+        settingValue: '#ffffff',
+      });
+    }
+
     // Build the base token request
-    // Note: editPayment and editShipping page types use the 'manage' page instead
-    // as Authorize.Net doesn't support direct editing via specific page types
     const tokenRequest: any = {
       getHostedProfilePageRequest: {
         merchantAuthentication: {
@@ -107,7 +125,7 @@ Deno.serve(async (req) => {
       },
     };
 
-    console.log('Sending token request to Authorize.Net API');
+    console.log('Sending token request to Authorize.Net API with settings:', settings.map(s => s.settingName));
 
     // Call Authorize.Net API
     const apiUrl = 'https://apitest.authorize.net/xml/v1/request.api';
@@ -125,8 +143,6 @@ Deno.serve(async (req) => {
     // Check if the request was successful
     if (responseData.messages?.resultCode === 'Ok' && responseData.token) {
       // Map page types to gateway URLs
-      // Note: editPayment and editShipping redirect to manage page
-      // as Authorize.Net doesn't support direct editing via API
       const gatewayUrlMap: Record<string, string> = {
         manage: 'https://test.authorize.net/customer/manage',
         addPayment: 'https://test.authorize.net/customer/addPayment',
@@ -140,6 +156,7 @@ Deno.serve(async (req) => {
       console.log('Token generated successfully:', {
         pageType,
         gatewayUrl,
+        displayMode,
         referenceId,
       });
 
@@ -150,7 +167,12 @@ Deno.serve(async (req) => {
           gatewayUrl: gatewayUrl,
           referenceId: referenceId,
           pageType: pageType,
-          debug: debug ? { request: tokenRequest, response: responseData } : undefined,
+          displayMode: displayMode,
+          debug: debug ? { 
+            request: tokenRequest, 
+            response: responseData,
+            settings: settings 
+          } : undefined,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,12 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw, Code, ChevronDown, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw, Code, ChevronDown, ShieldCheck, Globe, ExternalLink, Monitor, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
+type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
 
 interface AcceptCustomerFormProps {
   onBack: () => void;
@@ -63,7 +67,15 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [selectedTab, setSelectedTab] = useState('create');
-  const [displayMode, setDisplayMode] = useState<'redirect' | 'lightbox' | 'iframe'>('redirect');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('redirect');
+  
+  // Lightbox/iFrame states
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [gatewayUrl, setGatewayUrl] = useState<string>('');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const lightboxIframeRef = useRef<HTMLIFrameElement>(null);
   
   // Get Profile states
   const [fetchedProfile, setFetchedProfile] = useState<FetchedProfile | null>(null);
@@ -90,6 +102,57 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
   const [paymentAmount, setPaymentAmount] = useState('29.99');
   const [selectedCustomerId, setSelectedCustomerId] = useState('524732491');
+
+  // Get the iframeCommunicator URL based on current origin
+  const getIframeCommunicatorUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/iFrameCommunicator.html`;
+    }
+    return '';
+  };
+
+  // Handle messages from the iFrameCommunicator
+  const handleIframeMessage = useCallback((event: MessageEvent) => {
+    console.log('📨 Accept Customer received message from iframe:', event.data);
+    
+    // Parse the message if it's a string
+    let messageData = event.data;
+    if (typeof event.data === 'string') {
+      try {
+        messageData = JSON.parse(event.data);
+      } catch {
+        messageData = { action: event.data };
+      }
+    }
+    
+    // Handle different message types from Accept Customer
+    if (messageData.action === 'cancel') {
+      console.log('🚫 Profile action cancelled by user');
+      setShowLightbox(false);
+      setShowIframe(false);
+      toast({
+        title: "Cancelled",
+        description: "Profile action was cancelled.",
+      });
+    } else if (messageData.action === 'resizeWindow') {
+      console.log('📐 Resize request:', messageData);
+    } else if (messageData.action === 'successfulSave') {
+      console.log('✅ Profile saved successfully');
+      setShowLightbox(false);
+      setShowIframe(false);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully.",
+      });
+      loadCustomerProfiles();
+    }
+  }, [toast]);
+
+  // Set up message listener for iframe communication
+  useEffect(() => {
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
+  }, [handleIframeMessage]);
 
   useEffect(() => {
     loadCustomerProfiles();
@@ -242,22 +305,31 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
     }
 
-    // Note: editPayment and editShipping redirect to 'manage' page
-    // where users can select which payment/shipping to edit
-
     setLoading(true);
     setDebugInfo(null);
 
     try {
+      const requestBody: any = {
+        customerProfileId: selectedCustomerId,
+        pageType: pageType,
+        paymentProfileId: paymentProfileId || undefined,
+        shippingAddressId: shippingAddressId || undefined,
+        displayMode: displayMode,
+        debug: debugMode
+      };
+
+      // Add return URL only for redirect mode
+      if (displayMode === 'redirect') {
+        requestBody.returnUrl = window.location.href;
+      }
+
+      // Add iframeCommunicator URL for iframe/lightbox modes
+      if (displayMode === 'iframe' || displayMode === 'lightbox') {
+        requestBody.iframeCommunicatorUrl = getIframeCommunicatorUrl();
+      }
+
       const { data, error } = await supabase.functions.invoke('get-hosted-profile-token', {
-        body: {
-          customerProfileId: selectedCustomerId,
-          pageType: pageType,
-          paymentProfileId: paymentProfileId || undefined,
-          shippingAddressId: shippingAddressId || undefined,
-          returnUrl: window.location.href,
-          debug: debugMode
-        }
+        body: requestBody
       });
 
       if (error) throw error;
@@ -267,19 +339,40 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       }
 
       if (data.success && data.token) {
-        // Redirect to Authorize.Net hosted form
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.gatewayUrl;
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = 'token';
-        tokenInput.value = data.token;
-        form.appendChild(tokenInput);
-        
-        document.body.appendChild(form);
-        form.submit();
+        setGeneratedToken(data.token);
+        setGatewayUrl(data.gatewayUrl);
+
+        if (displayMode === 'redirect') {
+          // Full page redirect
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = data.gatewayUrl;
+          
+          const tokenInput = document.createElement('input');
+          tokenInput.type = 'hidden';
+          tokenInput.name = 'token';
+          tokenInput.value = data.token;
+          form.appendChild(tokenInput);
+          
+          document.body.appendChild(form);
+          form.submit();
+        } else if (displayMode === 'lightbox') {
+          // Show lightbox modal
+          setShowLightbox(true);
+          setLoading(false);
+          toast({
+            title: "Opening Profile Manager",
+            description: "Loading hosted profile page...",
+          });
+        } else if (displayMode === 'iframe') {
+          // Show embedded iframe
+          setShowIframe(true);
+          setLoading(false);
+          toast({
+            title: "Opening Profile Manager",
+            description: "Loading hosted profile page...",
+          });
+        }
       } else {
         throw new Error(data.error || 'Failed to get hosted page token');
       }
@@ -294,7 +387,9 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      if (displayMode === 'redirect') {
+        setLoading(false);
+      }
     }
   };
 
@@ -452,6 +547,140 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Display Method Selector */}
+        <Card className="border-primary/20 bg-gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-primary" />
+              Display Method
+            </CardTitle>
+            <CardDescription>Choose how the hosted profile page is displayed</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup value={displayMode} onValueChange={(v) => setDisplayMode(v as DisplayMode)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <RadioGroupItem value="redirect" id="cim-redirect" className="peer sr-only" />
+                <Label 
+                  htmlFor="cim-redirect" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span className="font-medium">Full Page Redirect</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Navigate to Authorize.Net's hosted profile page.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Simplest</Badge>
+                </Label>
+              </div>
+              
+              <div className="relative">
+                <RadioGroupItem value="lightbox" id="cim-lightbox" className="peer sr-only" />
+                <Label 
+                  htmlFor="cim-lightbox" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    <span className="font-medium">Lightbox (Popup)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Profile manager appears as a modal overlay.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Seamless UX</Badge>
+                </Label>
+              </div>
+              
+              <div className="relative">
+                <RadioGroupItem value="iframe" id="cim-iframe" className="peer sr-only" />
+                <Label 
+                  htmlFor="cim-iframe" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    <span className="font-medium">Embedded iFrame</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Profile manager embedded within your page.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Custom Integration</Badge>
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            {displayMode !== 'redirect' && (
+              <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <Code className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="text-xs">
+                  <strong>iFrameCommunicator:</strong> Uses <code className="bg-muted px-1 rounded">/iFrameCommunicator.html</code> for cross-origin messaging between your page and the hosted form.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Embedded iFrame Display */}
+        {showIframe && generatedToken && (
+          <Card className="shadow-card border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Embedded Profile Manager
+                </CardTitle>
+                <CardDescription>Manage payment profiles below</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setShowIframe(false);
+                  setGeneratedToken(null);
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Close
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden bg-background">
+                <iframe
+                  ref={iframeRef}
+                  name="embedded_profile_iframe"
+                  className="w-full min-h-[700px] border-0"
+                  src="about:blank"
+                />
+                {/* Hidden form to POST token to iframe */}
+                <form
+                  id="embeddedProfileForm"
+                  method="POST"
+                  action={gatewayUrl}
+                  target="embedded_profile_iframe"
+                  ref={(form) => {
+                    if (form && generatedToken && showIframe) {
+                      form.innerHTML = '';
+                      const input = document.createElement('input');
+                      input.type = 'hidden';
+                      input.name = 'token';
+                      input.value = generatedToken;
+                      form.appendChild(input);
+                      setTimeout(() => form.submit(), 100);
+                    }
+                  }}
+                />
+              </div>
+              <Alert className="mt-4">
+                <Shield className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Profile form is loaded in a secure iFrame from Authorize.Net. Card data never touches this site.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Debug Info Panel */}
         {debugMode && debugInfo && (
@@ -1265,6 +1494,53 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Lightbox Modal */}
+      <Dialog open={showLightbox} onOpenChange={(open) => {
+        if (!open) {
+          setShowLightbox(false);
+          setGeneratedToken(null);
+        }
+      }}>
+        <DialogContent className="max-w-3xl h-[80vh] p-0 gap-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Profile Manager
+            </DialogTitle>
+            <DialogDescription>
+              Manage your payment profiles on Authorize.Net's secure form
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <iframe
+              ref={lightboxIframeRef}
+              name="lightbox_profile_iframe"
+              className="w-full h-full border-0"
+              style={{ minHeight: 'calc(80vh - 80px)' }}
+              src="about:blank"
+            />
+            <form
+              id="lightboxProfileForm"
+              method="POST"
+              action={gatewayUrl}
+              target="lightbox_profile_iframe"
+              ref={(form) => {
+                if (form && generatedToken && showLightbox) {
+                  form.innerHTML = '';
+                  const input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = 'token';
+                  input.value = generatedToken;
+                  form.appendChild(input);
+                  setTimeout(() => form.submit(), 100);
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
