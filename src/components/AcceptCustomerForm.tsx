@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw, Code, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -389,7 +390,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
               <div className="flex items-center space-x-2">
                 <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
                 <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
-                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <Code className="h-4 w-4 text-primary" />
                   Debug Mode - View API request/response details
                 </Label>
               </div>
@@ -407,7 +408,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
+              <Shield className="h-4 w-4" />
               Integration Architecture
             </CardTitle>
           </CardHeader>
@@ -443,46 +444,60 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
         {/* Debug Info Panel */}
         {debugMode && debugInfo && (
-          <Card className="border-yellow-500/50 bg-yellow-500/5">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                Debug Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">API Request</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(JSON.stringify(debugInfo.request, null, 2))}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-48">
-                  {JSON.stringify(debugInfo.request, null, 2)}
-                </pre>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">API Response</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(JSON.stringify(debugInfo.response, null, 2))}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-48">
-                  {JSON.stringify(debugInfo.response, null, 2)}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
+          <Collapsible defaultOpen>
+            <Card className="border-yellow-500/50 bg-yellow-500/5">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Code className="h-4 w-4" />
+                      Debug Information
+                    </CardTitle>
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                  <CardDescription>API request and response details for troubleshooting</CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {debugInfo.request && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">API Request</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.request, null, 2))}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.request, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {debugInfo.response && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">API Response</Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(JSON.stringify(debugInfo.response, null, 2))}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.response, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )}
 
         {/* Main Content Tabs */}
@@ -1181,30 +1196,59 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
             <CardTitle>Testing Information</CardTitle>
             <CardDescription>Use these test cards and credentials in sandbox mode</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium mb-2">Test Credit Cards:</h4>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Visa: <code className="bg-muted px-1 py-0.5 rounded">4111 1111 1111 1111</code></p>
-                  <p>• Mastercard: <code className="bg-muted px-1 py-0.5 rounded">5424 0000 0000 0015</code></p>
-                  <p>• Amex: <code className="bg-muted px-1 py-0.5 rounded">3782 822463 10005</code></p>
-                  <p>• Discover: <code className="bg-muted px-1 py-0.5 rounded">6011 0000 0000 0012</code></p>
-                  <p>• CVV: Any 3-4 digits</p>
-                  <p>• Expiration: Any future date</p>
+          <CardContent className="grid md:grid-cols-4 gap-6">
+            <div>
+              <h4 className="font-medium mb-2">Test Credit Cards</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Visa:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">4111111111111111</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Mastercard:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">5424000000000015</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Amex:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">370000000000002</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Discover:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">6011000000000012</code>
                 </div>
               </div>
-              <div>
-                <h4 className="font-medium mb-2">Validation Mode:</h4>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p><strong>testMode</strong> - Field validation only (Luhn check)</p>
-                  <p className="text-xs">• No processor interaction</p>
-                  <p className="text-xs">• No authorization required</p>
-                  <p className="text-xs">• No billing address needed</p>
-                  <p className="text-xs mt-2"><strong>liveMode</strong> - $0.00/$0.01 auth</p>
-                  <p className="text-xs">• Requires billing address</p>
-                  <p className="text-xs">• Creates temp transaction</p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Test Bank Account (eCheck)</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Routing:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">111000025</code>
                 </div>
+                <div className="flex justify-between">
+                  <span>Account:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">123456789</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Type:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">Checking</code>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Card Details</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>Expiry: Any future date (e.g., 12/2025)</div>
+                <div>CVV: Any 3-4 digits (e.g., 123)</div>
+                <div>ZIP: Any 5 digits (e.g., 12345)</div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Accept Customer Integration</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>Methods: CIM API + Hosted Forms</div>
+                <div>PCI Scope: SAQ A</div>
+                <div>Profile Support: Create, Manage, Charge</div>
               </div>
             </div>
           </CardContent>
