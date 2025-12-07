@@ -799,47 +799,15 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
-                {isReturningCustomer ? "Payment Options" : "Payment Settings"}
+                Payment Options
               </CardTitle>
               <CardDescription>
                 {isReturningCustomer 
                   ? "Available payment methods for this transaction"
-                  : "Configure hosted payment page options"}
+                  : "One-time payment processing"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!isReturningCustomer && (
-                <>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch 
-                        id="create-profile" 
-                        checked={createProfile} 
-                        onCheckedChange={setCreateProfile}
-                      />
-                      <Label htmlFor="create-profile">
-                        Save payment method for future use
-                      </Label>
-                    </div>
-
-                    {createProfile ? (
-                      <Alert>
-                        <Shield className="h-4 w-4" />
-                        <AlertDescription>
-                          A new customer profile will be created in Authorize.Net CIM, and the payment method will be 
-                          saved for faster future transactions.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Payment will be processed as a one-time transaction. No customer profile will be created.
-                      </p>
-                    )}
-                  </div>
-
-                  <Separator />
-                </>
-              )}
 
               <div className="space-y-3">
                 <h4 className="font-medium">Payment Options Available</h4>
