@@ -410,38 +410,6 @@ const PaymentMethodSelector = () => {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Additional Information */}
-        <Card className="shadow-card bg-gradient-card">
-          <CardHeader>
-            <CardTitle>Testing Information</CardTitle>
-            <CardDescription>
-              Important notes for testing both integration methods
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h3 className="font-semibold">Test Credentials Needed</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>API Login ID (for all methods)</li>
-                  <li>Client Key (AcceptJS & AcceptUI)</li>
-                  <li>Transaction Key (server-side processing)</li>
-                  <li>Sandbox account from Authorize.Net</li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <h3 className="font-semibold">Test Credit Cards</h3>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  <li>Visa: 4111111111111111</li>
-                  <li>Mastercard: 5555555555554444</li>
-                  <li>American Express: 378282246310005</li>
-                  <li>Any future expiry date and CVV</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
