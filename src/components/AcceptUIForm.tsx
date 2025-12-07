@@ -546,21 +546,37 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label>Data Descriptor</Label>
+                      <Label>Message Code</Label>
                       <Input
-                        value={paymentToken.opaqueData?.dataDescriptor || ''}
+                        value={(paymentToken.messages?.message?.map((m: any) => m.code).join(', ')) || ''}
                         readOnly
                         className="font-mono"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label>Token Length</Label>
+                      <Label>Message</Label>
                       <Input
-                        value={paymentToken.opaqueData?.dataValue?.length || 0}
+                        value={(paymentToken.messages?.message?.map((m: any) => m.text).join(' | ')) || ''}
                         readOnly
                         className="font-mono"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data Type (Data Descriptor)</Label>
+                    <Input
+                      value={paymentToken.opaqueData?.dataDescriptor || ''}
+                      readOnly
+                      className="font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Payment Nonce (Data Value)</Label>
+                    <textarea
+                      value={paymentToken.opaqueData?.dataValue || ''}
+                      readOnly
+                      className="w-full h-20 p-2 text-xs font-mono bg-muted border rounded-md resize-none"
+                    />
                   </div>
                 </div>
               )}
