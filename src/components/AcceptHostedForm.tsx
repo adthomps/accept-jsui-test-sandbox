@@ -502,55 +502,6 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           </CardContent>
         </Card>
 
-        {/* Integration Architecture Info */}
-        <Card className="border-blue-500/50 bg-blue-500/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Integration Architecture
-              </CardTitle>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
-                <ShieldCheck className="h-3 w-3" />
-                SAQ-A
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                <strong>Lowest PCI Scope:</strong> Card data never touches your page. 
-                All payment collection happens on Authorize.Net's hosted pages.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="default" className="text-xs">Accept Hosted</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Payment collection happens on Authorize.Net's secure hosted pages.
-                Your server only generates a session token - no card data handling.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Flow:</strong> Server Token → Display Form → Payment → Return/Callback
-              </p>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className="text-xs">Customer Profiles</Badge>
-                <span className="text-xs text-muted-foreground">CIM Integration</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Supports both new customers and returning customers with saved payment methods.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Supports:</strong> One-time Payments, Profile Creation, Saved Payment Methods
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Display Method Selector */}
         <Card className="border-primary/20 bg-gradient-card shadow-card">
           <CardHeader>
