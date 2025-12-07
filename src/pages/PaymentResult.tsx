@@ -117,6 +117,36 @@ const PaymentResult = () => {
                     </div>
                   )}
                 </div>
+                
+                {/* Customer Profile Info */}
+                {(transactionDetails.customerProfileId || transactionDetails.customerPaymentProfileId) && (
+                  <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                      ✅ Payment Method Saved
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {transactionDetails.customerProfileId && (
+                        <div>
+                          <p className="text-green-600 dark:text-green-400">Customer Profile ID</p>
+                          <p className="font-mono text-green-800 dark:text-green-200">
+                            {transactionDetails.customerProfileId}
+                          </p>
+                        </div>
+                      )}
+                      {transactionDetails.customerPaymentProfileId && (
+                        <div>
+                          <p className="text-green-600 dark:text-green-400">Payment Profile ID</p>
+                          <p className="font-mono text-green-800 dark:text-green-200">
+                            {transactionDetails.customerPaymentProfileId}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                      Your payment method has been saved for faster checkout next time.
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           )}
