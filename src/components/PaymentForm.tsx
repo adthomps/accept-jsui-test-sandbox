@@ -338,31 +338,35 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <Button
-            variant="outline"
-            onClick={onBack}
-            className="absolute top-6 left-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center justify-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
+          <div>
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Secure Payment Collection
+              AcceptJS Payment
             </h1>
+            <p className="text-muted-foreground">
+              Client-side tokenization with custom payment form
+            </p>
           </div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Collect customer information and process payments securely using Authorize.Net AcceptJS
-          </p>
-          <Badge variant="secondary" className="gap-2">
-            <Shield className="h-4 w-4" />
-            Test Environment
-          </Badge>
+          <div className="ml-auto flex gap-2">
+            <Badge variant="secondary" className="gap-2">
+              <Shield className="h-4 w-4" />
+              SAQ A-EP
+            </Badge>
+            <Badge variant="outline" className="gap-2">
+              {paymentType === 'card' ? (
+                <CreditCard className="h-4 w-4" />
+              ) : (
+                <Landmark className="h-4 w-4" />
+              )}
+              {paymentType === 'card' ? 'Card' : 'eCheck'}
+            </Badge>
+          </div>
         </div>
 
         {/* Integration Architecture Info */}
