@@ -62,32 +62,34 @@ const PaymentMethodSelector = () => {
 
           <TabsContent value="comparison" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="border-primary/20">
+              {/* AcceptJS Card */}
+              <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     AcceptJS
-                    <Badge variant="secondary">Recommended</Badge>
+                    <Badge variant="secondary">SAQ A-EP</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Client-side tokenization for secure payment processing
+                    Client-side tokenization with custom payment forms
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• PCI DSS compliant tokenization</li>
-                      <li>• Complete control over form design</li>
+                      <li>• Client-side tokenization</li>
+                      <li>• Custom form design</li>
+                      <li>• Credit card & eCheck</li>
                       <li>• Real-time validation</li>
-                      <li>• Mobile-optimized</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Custom checkout experiences</li>
+                      <li>• Custom branded checkout</li>
                       <li>• E-commerce platforms</li>
-                      <li>• Applications requiring design flexibility</li>
+                      <li>• Design flexibility needs</li>
+                      <li>• Mobile web payments</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -101,24 +103,25 @@ const PaymentMethodSelector = () => {
                 </CardFooter>
               </Card>
 
-              <Card className="border-primary/20">
+              {/* AcceptUI Card */}
+              <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     AcceptUI
-                    <Badge variant="secondary">Hosted Forms</Badge>
+                    <Badge variant="secondary">SAQ-A</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Iframe-based hosted payment forms with complete PCI compliance
+                    Hosted modal lightbox for quick integration
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Iframe-based hosted forms</li>
-                      <li>• SAQ A PCI compliance</li>
-                      <li>• Modal overlay UI</li>
-                      <li>• Mobile optimized</li>
+                      <li>• Iframe-based modal</li>
+                      <li>• No card data on page</li>
+                      <li>• Credit card & eCheck</li>
+                      <li>• Billing address option</li>
                     </ul>
                   </div>
                   <div>
@@ -126,7 +129,8 @@ const PaymentMethodSelector = () => {
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Quick integration</li>
                       <li>• Minimal PCI scope</li>
-                      <li>• Hosted payment UI</li>
+                      <li>• Standard payment forms</li>
+                      <li>• Low dev resources</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -134,31 +138,31 @@ const PaymentMethodSelector = () => {
                   <Button 
                     onClick={() => setSelectedMethod('acceptui')}
                     className="w-full"
-                    variant="outline"
                   >
                     Test AcceptUI
                   </Button>
                 </CardFooter>
               </Card>
 
-              <Card className="border-primary/20">
+              {/* Accept Hosted Card */}
+              <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     Accept Hosted
-                    <Badge variant="outline">API-Driven</Badge>
+                    <Badge variant="secondary">SAQ-A</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Modern API-based hosted payment forms
+                    Full-page hosted payment with profiles
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Server-side token generation</li>
-                      <li>• Enhanced customization</li>
+                      <li>• Server-side token flow</li>
+                      <li>• Customer profile support</li>
                       <li>• Webhook integration</li>
-                      <li>• Advanced security</li>
+                      <li>• Returning customers</li>
                     </ul>
                   </div>
                   <div>
@@ -166,7 +170,8 @@ const PaymentMethodSelector = () => {
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Enterprise applications</li>
                       <li>• Complex payment flows</li>
-                      <li>• Advanced customization needs</li>
+                      <li>• Maximum security</li>
+                      <li>• Profile management</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -174,39 +179,40 @@ const PaymentMethodSelector = () => {
                   <Button 
                     onClick={() => setSelectedMethod('accepthosted')}
                     className="w-full"
-                    variant="outline"
                   >
                     Test Accept Hosted
                   </Button>
                 </CardFooter>
               </Card>
 
-              <Card className="border-primary/20">
+              {/* Accept Customer Card */}
+              <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     Accept Customer
                     <Badge variant="secondary">CIM</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Customer Information Manager API for storing payment methods
+                    Stored payment profiles for recurring use
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 flex-1">
                   <div>
                     <h4 className="font-medium mb-2">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Store customer payment methods</li>
-                      <li>• Tokenized payment profiles</li>
-                      <li>• Recurring billing support</li>
-                      <li>• PCI-compliant storage</li>
+                      <li>• Tokenized storage</li>
+                      <li>• Multiple payment methods</li>
+                      <li>• Hosted profile pages</li>
+                      <li>• Direct API charging</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Subscription services</li>
+                      <li>• Subscription billing</li>
                       <li>• Repeat customers</li>
                       <li>• Saved payment methods</li>
+                      <li>• Recurring payments</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -214,13 +220,11 @@ const PaymentMethodSelector = () => {
                   <Button 
                     onClick={() => setSelectedMethod('acceptcustomer')}
                     className="w-full"
-                    variant="outline"
                   >
                     Test Accept Customer
                   </Button>
                 </CardFooter>
               </Card>
-
             </div>
           </TabsContent>
 
