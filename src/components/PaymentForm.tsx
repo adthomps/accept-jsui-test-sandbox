@@ -723,6 +723,70 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
             }}
           />
         )}
+
+        {/* Testing Information */}
+        <Card className="shadow-card bg-gradient-card border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Testing Information</CardTitle>
+            <CardDescription>Use these test credentials for sandbox testing</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium mb-2">Test Credit Cards</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Visa:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">4111111111111111</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Mastercard:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">5424000000000015</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Amex:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">370000000000002</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Discover:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">6011000000000012</code>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Test Bank Account (eCheck)</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Routing:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">111000025</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Account:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">123456789</code>
+                </div>
+                <div className="flex justify-between">
+                  <span>Type:</span>
+                  <code className="bg-muted px-1 py-0.5 rounded">Checking</code>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Card Details</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>Expiry: Any future date (e.g., 12/2025)</div>
+                <div>CVV: Any 3-4 digits (e.g., 123)</div>
+                <div>ZIP: Any 5 digits (e.g., 12345)</div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">AcceptJS Integration</h4>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>Library: Accept.js v1</div>
+                <div>Method: Client-side tokenization</div>
+                <div>PCI Scope: SAQ A-EP</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
