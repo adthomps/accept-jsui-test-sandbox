@@ -229,7 +229,7 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>AcceptJS Technical Details</CardTitle>
                 <CardDescription>
-                  Understanding the AcceptJS implementation and workflow
+                  Client-side tokenization for custom payment form integration
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -237,20 +237,45 @@ const PaymentMethodSelector = () => {
                   <div className="space-y-4">
                     <h3 className="font-semibold">Implementation Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Load AcceptJS library from Authorize.Net</li>
-                      <li>Create custom payment form</li>
-                      <li>Collect payment data client-side</li>
-                      <li>Generate secure payment token</li>
-                      <li>Send token to your server for processing</li>
+                      <li>Load Accept.js library from Authorize.Net CDN</li>
+                      <li>Create custom payment form with your design</li>
+                      <li>Collect card/bank data in browser</li>
+                      <li>Call Accept.dispatchData() to tokenize</li>
+                      <li>Send payment nonce to your server</li>
+                      <li>Process transaction via Authorize.Net API</li>
                     </ol>
                   </div>
                   <div className="space-y-4">
                     <h3 className="font-semibold">Security Features</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Client-side tokenization</li>
+                      <li>Client-side tokenization (SAQ A-EP)</li>
                       <li>No sensitive data on your servers</li>
+                      <li>TLS encrypted transmission</li>
+                      <li>One-time use payment nonces</li>
                       <li>PCI DSS compliance assistance</li>
-                      <li>Encrypted data transmission</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Available Options</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Credit/Debit card payments</li>
+                      <li>eCheck/ACH bank transfers</li>
+                      <li>Custom form styling</li>
+                      <li>Real-time validation</li>
+                      <li>Mobile-optimized forms</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Best Use Cases</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Custom branded checkout</li>
+                      <li>E-commerce platforms</li>
+                      <li>Single-page applications</li>
+                      <li>Mobile web payments</li>
+                      <li>Design flexibility required</li>
                     </ul>
                   </div>
                 </div>
@@ -270,7 +295,7 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>AcceptUI Technical Details</CardTitle>
                 <CardDescription>
-                  Understanding the AcceptUI hosted form implementation and workflow
+                  Hosted modal lightbox for quick and secure payment integration
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -278,20 +303,45 @@ const PaymentMethodSelector = () => {
                   <div className="space-y-4">
                     <h3 className="font-semibold">Implementation Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Load AcceptUI v3 library from Authorize.Net</li>
-                      <li>Create button with AcceptUI class</li>
-                      <li>Configure data attributes for form</li>
+                      <li>Load AcceptUI.js library from Authorize.Net</li>
+                      <li>Add button with AcceptUI class</li>
+                      <li>Configure data attributes on button</li>
+                      <li>User clicks to open lightbox modal</li>
                       <li>Handle response in callback function</li>
-                      <li>Process token on your server</li>
+                      <li>Process payment nonce on server</li>
                     </ol>
                   </div>
                   <div className="space-y-4">
                     <h3 className="font-semibold">Security Features</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Iframe-based hosted forms</li>
-                      <li>SAQ A PCI compliance</li>
-                      <li>No sensitive data handling</li>
-                      <li>Modal overlay interface</li>
+                      <li>Iframe-based hosted forms (SAQ-A)</li>
+                      <li>No card data touches your page</li>
+                      <li>Authorize.Net hosted UI</li>
+                      <li>Secure modal overlay</li>
+                      <li>Automatic PCI compliance</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Available Options</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Credit/Debit card payments</li>
+                      <li>eCheck/ACH bank transfers</li>
+                      <li>Billing address collection</li>
+                      <li>Customizable button text</li>
+                      <li>Response handler callbacks</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Best Use Cases</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Quick integration needed</li>
+                      <li>Minimal PCI scope required</li>
+                      <li>Standard payment forms</li>
+                      <li>Low development resources</li>
+                      <li>Hosted UI acceptable</li>
                     </ul>
                   </div>
                 </div>
@@ -311,7 +361,7 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>Accept Hosted Technical Details</CardTitle>
                 <CardDescription>
-                  Understanding the Accept Hosted Payment implementation and workflow
+                  Full-page hosted payment with customer profile support
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -319,20 +369,45 @@ const PaymentMethodSelector = () => {
                   <div className="space-y-4">
                     <h3 className="font-semibold">Implementation Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Generate payment token via server API</li>
-                      <li>Redirect customer to Authorize.Net hosted page</li>
-                      <li>Customer completes payment on secure form</li>
+                      <li>Server generates hosted payment token</li>
+                      <li>Redirect customer to Authorize.Net</li>
+                      <li>Customer completes payment on hosted page</li>
                       <li>Authorize.Net processes transaction</li>
-                      <li>Customer redirected back with results</li>
+                      <li>Customer redirected to return URL</li>
+                      <li>Webhook confirms transaction status</li>
                     </ol>
                   </div>
                   <div className="space-y-4">
                     <h3 className="font-semibold">Security Features</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>Fully hosted payment pages</li>
+                      <li>Fully hosted payment page (SAQ-A)</li>
                       <li>PCI DSS Level 1 compliant</li>
-                      <li>Customer profile management</li>
-                      <li>Webhook integration support</li>
+                      <li>No payment data on your site</li>
+                      <li>Webhook transaction verification</li>
+                      <li>Customer profile encryption</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Available Options</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>One-time payments</li>
+                      <li>Customer profile creation</li>
+                      <li>Returning customer support</li>
+                      <li>Save payment for future use</li>
+                      <li>Customizable hosted page</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Best Use Cases</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Enterprise applications</li>
+                      <li>Complex payment flows</li>
+                      <li>Returning customer payments</li>
+                      <li>Maximum security required</li>
+                      <li>Webhook-driven architecture</li>
                     </ul>
                   </div>
                 </div>
@@ -352,7 +427,7 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>Accept Customer (CIM) Technical Details</CardTitle>
                 <CardDescription>
-                  Understanding the Customer Information Manager implementation and workflow
+                  Customer Information Manager for stored payment profiles
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -361,18 +436,20 @@ const PaymentMethodSelector = () => {
                     <h3 className="font-semibold">Implementation Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
                       <li>Create customer profile via CIM API</li>
-                      <li>Store payment methods securely</li>
-                      <li>Use hosted forms for profile management</li>
-                      <li>Charge saved payment profiles</li>
-                      <li>Manage shipping addresses</li>
+                      <li>Add payment methods via hosted forms</li>
+                      <li>Store tokenized payment profiles</li>
+                      <li>Charge profiles with stored tokens</li>
+                      <li>Manage profiles via hosted pages</li>
+                      <li>Handle recurring/repeat payments</li>
                     </ol>
                   </div>
                   <div className="space-y-4">
                     <h3 className="font-semibold">Security Features</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                       <li>PCI-compliant token storage</li>
-                      <li>Hosted profile management pages</li>
+                      <li>Hosted profile management (SAQ-A)</li>
                       <li>No card data on your servers</li>
+                      <li>Tokenized payment references</li>
                       <li>Secure recurring billing</li>
                     </ul>
                   </div>
@@ -380,12 +457,12 @@ const PaymentMethodSelector = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h3 className="font-semibold">Available Operations</h3>
+                    <h3 className="font-semibold">Available Options</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                       <li>Create Profile (Direct API)</li>
                       <li>Get Profile (Direct API)</li>
                       <li>Manage Profile (Hosted Form)</li>
-                      <li>Add/Edit Payment Methods (Hosted Form)</li>
+                      <li>Add/Edit Payment Methods</li>
                       <li>Charge Profile (Direct API)</li>
                     </ul>
                   </div>
@@ -395,7 +472,8 @@ const PaymentMethodSelector = () => {
                       <li>Subscription billing</li>
                       <li>Returning customer payments</li>
                       <li>Saved payment methods</li>
-                      <li>Multi-payment profile customers</li>
+                      <li>Multi-card customer accounts</li>
+                      <li>Recurring payment systems</li>
                     </ul>
                   </div>
                 </div>
