@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code } from "lucide-react";
+import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code, Globe, Monitor, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+
+type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
 
 // Schema for new customers (requires all fields)
 const newCustomerSchema = z.object({
@@ -80,6 +84,73 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const [showDebug, setShowDebug] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  
+  // Display mode state
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('redirect');
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [showIframe, setShowIframe] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const lightboxIframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Get the iframeCommunicator URL based on current origin
+  const getIframeCommunicatorUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/iFrameCommunicator.html`;
+    }
+    return 'https://accept-jsui-test-sandbox.lovable.app/iFrameCommunicator.html';
+  };
+
+  // Handle messages from the iFrameCommunicator
+  const handleIframeMessage = useCallback((event: MessageEvent) => {
+    console.log('📨 Received message from iframe:', event.data);
+    
+    // Parse the message if it's a string
+    let messageData = event.data;
+    if (typeof event.data === 'string') {
+      try {
+        messageData = JSON.parse(event.data);
+      } catch {
+        // If it's not JSON, use the string directly
+        messageData = { action: event.data };
+      }
+    }
+    
+    // Handle different message types from Accept Hosted
+    if (messageData.action === 'cancel') {
+      console.log('🚫 Payment cancelled by user');
+      setShowLightbox(false);
+      setShowIframe(false);
+      toast({
+        title: "Payment Cancelled",
+        description: "You cancelled the payment process.",
+      });
+    } else if (messageData.action === 'transactResponse') {
+      console.log('✅ Transaction response received:', messageData);
+      setShowLightbox(false);
+      setShowIframe(false);
+      
+      // Parse the response
+      const response = messageData.response ? JSON.parse(messageData.response) : null;
+      if (response) {
+        toast({
+          title: response.responseCode === '1' ? "Payment Successful" : "Payment Failed",
+          description: response.responseCode === '1' 
+            ? `Transaction ID: ${response.transId}` 
+            : response.responseText || "Transaction was not approved",
+          variant: response.responseCode === '1' ? "default" : "destructive",
+        });
+      }
+    } else if (messageData.action === 'resizeWindow') {
+      console.log('📐 Resize request:', messageData);
+      // Could handle iframe resizing here if needed
+    }
+  }, [toast]);
+
+  // Set up message listener for iframe communication
+  useEffect(() => {
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
+  }, [handleIframeMessage]);
 
   const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
     setCustomerInfo((prev) => ({
@@ -151,15 +222,22 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
       // For returning customers, only send amount (profile has the rest)
       // For new customers, send all customer info
+      const basePayload = {
+        returnUrl: `${window.location.origin}/payment-result`,
+        cancelUrl: window.location.origin,
+        debug: debugMode,
+        displayMode,
+        iframeCommunicatorUrl: displayMode !== 'redirect' ? getIframeCommunicatorUrl() : undefined,
+      };
+
       const requestPayload = isReturningCustomer ? {
+        ...basePayload,
         existingCustomerEmail: existingCustomerEmail,
         amount: parseFloat(customerInfo.amount),
         // For returning customers, optionally add new payment methods to their existing profile
         addPaymentToProfile: saveNewPaymentMethod,
-        returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
-        cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
-        debug: debugMode,
       } : {
+        ...basePayload,
         customerInfo: {
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
@@ -173,9 +251,6 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           amount: parseFloat(customerInfo.amount),
         },
         createProfile: createProfile,
-        returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
-        cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
-        debug: debugMode,
       };
 
       // Store request for debugging
@@ -251,34 +326,48 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           return;
         }
 
-        setProcessingStep("Redirecting to secure payment page...");
+        setProcessingStep("Launching payment form...");
         toast({
-          title: "Redirecting to Payment",
-          description: "Opening Authorize.Net hosted payment page...",
+          title: "Payment Ready",
+          description: displayMode === 'redirect' 
+            ? "Opening Authorize.Net hosted payment page..."
+            : "Opening payment form...",
         });
 
-        console.log("🚀 Step 4: Creating form to POST token to Authorize.Net...");
+        console.log("🚀 Step 4: Launching payment form with display mode:", displayMode);
 
-        // Create a form to POST the token (Authorize.Net requires POST, not GET)
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = "https://test.authorize.net/payment/payment";
-        form.style.display = "none";
+        if (displayMode === 'redirect') {
+          // Full page redirect - create a form to POST the token
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = "https://test.authorize.net/payment/payment";
+          form.style.display = "none";
 
-        const tokenInput = document.createElement("input");
-        tokenInput.type = "hidden";
-        tokenInput.name = "token";
-        tokenInput.value = data.token;
+          const tokenInput = document.createElement("input");
+          tokenInput.type = "hidden";
+          tokenInput.name = "token";
+          tokenInput.value = data.token;
 
-        form.appendChild(tokenInput);
-        document.body.appendChild(form);
+          form.appendChild(tokenInput);
+          document.body.appendChild(form);
 
-        console.log("📤 Step 5: Submitting form to Authorize.Net hosted payment page...");
+          console.log("📤 Step 5: Submitting form to Authorize.Net hosted payment page...");
 
-        // Submit the form after a small delay to show processing state
-        setTimeout(() => {
-          form.submit();
-        }, 1000);
+          // Submit the form after a small delay to show processing state
+          setTimeout(() => {
+            form.submit();
+          }, 1000);
+        } else if (displayMode === 'lightbox') {
+          // Lightbox mode - show modal with iframe
+          setGeneratedToken(data.token);
+          setShowLightbox(true);
+          setIsProcessing(false);
+        } else if (displayMode === 'iframe') {
+          // Embedded iframe mode - show inline iframe
+          setGeneratedToken(data.token);
+          setShowIframe(true);
+          setIsProcessing(false);
+        }
       } else {
         console.error("Payment token generation failed:", data);
         toast({
@@ -392,6 +481,80 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           </div>
         </div>
 
+        {/* Display Method Selector */}
+        <Card className="border-primary/20 bg-gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-primary" />
+              Display Method
+            </CardTitle>
+            <CardDescription>Choose how the payment form is displayed</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup value={displayMode} onValueChange={(v) => setDisplayMode(v as DisplayMode)} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <RadioGroupItem value="redirect" id="redirect" className="peer sr-only" />
+                <Label 
+                  htmlFor="redirect" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span className="font-medium">Full Page Redirect</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Customer leaves your site and completes payment on Authorize.Net's hosted page.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Simplest</Badge>
+                </Label>
+              </div>
+              
+              <div className="relative">
+                <RadioGroupItem value="lightbox" id="lightbox" className="peer sr-only" />
+                <Label 
+                  htmlFor="lightbox" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    <span className="font-medium">Lightbox (Popup)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Payment form appears as a modal overlay. Customer stays on your site.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Seamless UX</Badge>
+                </Label>
+              </div>
+              
+              <div className="relative">
+                <RadioGroupItem value="iframe" id="iframe" className="peer sr-only" />
+                <Label 
+                  htmlFor="iframe" 
+                  className="flex flex-col gap-2 p-4 border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    <span className="font-medium">Embedded iFrame</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Payment form embedded directly within your page layout.
+                  </p>
+                  <Badge variant="secondary" className="w-fit text-xs">Custom Integration</Badge>
+                </Label>
+              </div>
+            </RadioGroup>
+            
+            {displayMode !== 'redirect' && (
+              <Alert className="mt-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <Code className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="text-xs">
+                  <strong>iFrameCommunicator:</strong> Uses <code className="bg-muted px-1 rounded">/iFrameCommunicator.html</code> for cross-origin messaging between your page and the hosted form.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Integration Architecture Info */}
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
@@ -403,15 +566,22 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           <CardContent className="space-y-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Badge variant="default" className="text-xs">Accept Hosted Redirect</Badge>
+                <Badge variant="default" className="text-xs">
+                  {displayMode === 'redirect' ? 'Full Page Redirect' : displayMode === 'lightbox' ? 'Lightbox Modal' : 'Embedded iFrame'}
+                </Badge>
                 <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Customer is redirected to Authorize.Net's fully hosted payment page.
-                Your server only generates the session token - no card data handling.
+                {displayMode === 'redirect' 
+                  ? "Customer is redirected to Authorize.Net's fully hosted payment page. Your server only generates the session token - no card data handling."
+                  : "Payment form displayed via secure iFrame. Your page communicates via postMessage - no card data touches your site."
+                }
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                <strong>Flow:</strong> Server Token → Redirect to Authorize.Net → Payment → Return URL
+                <strong>Flow:</strong> {displayMode === 'redirect' 
+                  ? "Server Token → Redirect to Authorize.Net → Payment → Return URL"
+                  : "Server Token → iFrame Display → postMessage Events → Transaction Complete"
+                }
               </p>
             </div>
             
@@ -900,14 +1070,20 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                   </div>
                 ) : (
                   <>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Proceed to Hosted Payment
+                    {displayMode === 'redirect' && <Globe className="h-4 w-4 mr-2" />}
+                    {displayMode === 'lightbox' && <ExternalLink className="h-4 w-4 mr-2" />}
+                    {displayMode === 'iframe' && <Code className="h-4 w-4 mr-2" />}
+                    {displayMode === 'redirect' && "Proceed to Hosted Payment"}
+                    {displayMode === 'lightbox' && "Open Payment Lightbox"}
+                    {displayMode === 'iframe' && "Show Payment Form"}
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
-                You will be redirected to Authorize.Net's secure payment page
+                {displayMode === 'redirect' && "You will be redirected to Authorize.Net's secure payment page"}
+                {displayMode === 'lightbox' && "Payment form will open in a modal overlay on this page"}
+                {displayMode === 'iframe' && "Payment form will be displayed below"}
               </p>
             </CardContent>
           </Card>
@@ -969,14 +1145,126 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
             <div>
               <h4 className="font-medium mb-2">Accept Hosted Integration</h4>
               <div className="space-y-1 text-sm text-muted-foreground">
-                <div>Method: Server-side token redirect</div>
+                <div>Display Modes: Redirect, Lightbox, iFrame</div>
                 <div>PCI Scope: SAQ A</div>
                 <div>Profile Support: New & Returning</div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Embedded iFrame Display */}
+        {showIframe && generatedToken && (
+          <Card className="shadow-card border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-primary" />
+                  Embedded Payment Form
+                </CardTitle>
+                <CardDescription>Complete your payment below</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setShowIframe(false);
+                  setGeneratedToken(null);
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Close
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden bg-background">
+                <iframe
+                  ref={iframeRef}
+                  name="embedded_payment_iframe"
+                  className="w-full min-h-[600px] border-0"
+                  src="about:blank"
+                />
+                {/* Hidden form to POST token to iframe */}
+                <form
+                  id="embeddedPaymentForm"
+                  method="POST"
+                  action="https://test.authorize.net/payment/payment"
+                  target="embedded_payment_iframe"
+                  ref={(form) => {
+                    if (form && generatedToken && showIframe) {
+                      // Clear any existing inputs
+                      form.innerHTML = '';
+                      const input = document.createElement('input');
+                      input.type = 'hidden';
+                      input.name = 'token';
+                      input.value = generatedToken;
+                      form.appendChild(input);
+                      // Submit on mount
+                      setTimeout(() => form.submit(), 100);
+                    }
+                  }}
+                />
+              </div>
+              <Alert className="mt-4">
+                <Shield className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Payment form is loaded in a secure iFrame from Authorize.Net. Your card data never touches this site.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Lightbox Modal */}
+      <Dialog open={showLightbox} onOpenChange={(open) => {
+        if (!open) {
+          setShowLightbox(false);
+          setGeneratedToken(null);
+        }
+      }}>
+        <DialogContent className="max-w-3xl h-[80vh] p-0 gap-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Secure Payment
+            </DialogTitle>
+            <DialogDescription>
+              Complete your payment on Authorize.Net's secure form
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <iframe
+              ref={lightboxIframeRef}
+              name="lightbox_payment_iframe"
+              className="w-full h-full border-0"
+              style={{ minHeight: 'calc(80vh - 80px)' }}
+              src="about:blank"
+            />
+            {/* Hidden form to POST token to lightbox iframe */}
+            <form
+              id="lightboxPaymentForm"
+              method="POST"
+              action="https://test.authorize.net/payment/payment"
+              target="lightbox_payment_iframe"
+              ref={(form) => {
+                if (form && generatedToken && showLightbox) {
+                  // Clear any existing inputs
+                  form.innerHTML = '';
+                  const input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = 'token';
+                  input.value = generatedToken;
+                  form.appendChild(input);
+                  // Submit on mount
+                  setTimeout(() => form.submit(), 100);
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

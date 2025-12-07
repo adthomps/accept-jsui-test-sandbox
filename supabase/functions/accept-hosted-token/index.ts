@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Display mode for Accept Hosted
+type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
+
 // Full request with customer info (new customers)
 interface NewCustomerRequest {
   customerInfo: {
@@ -24,6 +27,8 @@ interface NewCustomerRequest {
   cancelUrl?: string;
   createProfile?: boolean;
   debug?: boolean;
+  displayMode?: DisplayMode;
+  iframeCommunicatorUrl?: string;
 }
 
 // Simplified request for returning customers (profile lookup)
@@ -34,6 +39,8 @@ interface ReturningCustomerRequest {
   cancelUrl?: string;
   addPaymentToProfile?: boolean; // Add new payment method to existing profile
   debug?: boolean;
+  displayMode?: DisplayMode;
+  iframeCommunicatorUrl?: string;
 }
 
 type HostedTokenRequest = NewCustomerRequest | ReturningCustomerRequest;
@@ -60,6 +67,10 @@ serve(async (req) => {
     const requestBody: HostedTokenRequest = await req.json();
     const isReturning = isReturningCustomerRequest(requestBody);
     const debug = Boolean(requestBody.debug);
+    const displayMode: DisplayMode = requestBody.displayMode || 'redirect';
+    const iframeCommunicatorUrl = requestBody.iframeCommunicatorUrl;
+    
+    console.log('🖥️ Display mode:', displayMode);
     
     console.log('📦 Request type:', isReturning ? 'RETURNING CUSTOMER' : 'NEW CUSTOMER');
     console.log('📦 Request payload:', JSON.stringify({
@@ -378,7 +389,8 @@ serve(async (req) => {
             {
               settingName: "hostedPaymentReturnOptions",
               settingValue: JSON.stringify({
-                showReceipt: true,
+                // For lightbox/iframe modes, we don't show the receipt since we handle it via postMessage
+                showReceipt: displayMode === 'redirect',
                 url: returnUrlWithRef,
                 urlText: "Continue",
                 cancelUrl: cancelUrlClean,
@@ -443,8 +455,15 @@ serve(async (req) => {
                 show: true,
                 merchantName: "Demo Store, Inc."
               })
-            }
-            // Note: hostedPaymentIFrameCommunicatorUrl is not required for full-page redirect
+            },
+            // Add iFrameCommunicator URL for lightbox and iframe modes
+            // This enables cross-origin communication between your page and the hosted form
+            ...(displayMode !== 'redirect' && iframeCommunicatorUrl ? [{
+              settingName: "hostedPaymentIFrameCommunicatorUrl",
+              settingValue: JSON.stringify({
+                url: iframeCommunicatorUrl
+              })
+            }] : [])
           ]
         }
       },
@@ -506,6 +525,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         token,
+        displayMode,
+        // Return the appropriate gateway URL based on display mode
+        gatewayUrl: displayMode === 'redirect' 
+          ? 'https://test.authorize.net/payment/payment'
+          : 'https://test.authorize.net/payment/payment',
         ...(debug ? { debug: { request: sanitizedRequest, response: root } } : {})
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
