@@ -153,7 +153,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       const requestPayload = isReturningCustomer ? {
         existingCustomerEmail: existingCustomerEmail,
         amount: parseFloat(customerInfo.amount),
-        createProfile: true, // Always add new payment to profile for returning customers
+        // For returning customers, we add payment methods to their existing profile, not create a new one
+        addPaymentToProfile: true,
         returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
         cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
         debug: debugMode,

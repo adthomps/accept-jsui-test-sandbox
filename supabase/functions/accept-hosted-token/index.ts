@@ -32,7 +32,7 @@ interface ReturningCustomerRequest {
   amount: number;
   returnUrl?: string;
   cancelUrl?: string;
-  createProfile?: boolean;
+  addPaymentToProfile?: boolean; // Add new payment method to existing profile
   debug?: boolean;
 }
 
@@ -72,7 +72,15 @@ serve(async (req) => {
       })
     }, null, 2));
 
-    const { returnUrl, cancelUrl, createProfile } = requestBody;
+    const { returnUrl, cancelUrl } = requestBody;
+    // For new customers: createProfile controls whether to save their info
+    // For returning customers: addPaymentToProfile controls whether to add new payment methods
+    const createProfile = isReturning 
+      ? false  // Returning customers already have a profile
+      : (requestBody as NewCustomerRequest).createProfile;
+    const addPaymentToProfile = isReturning 
+      ? (requestBody as ReturningCustomerRequest).addPaymentToProfile 
+      : createProfile;  // For new customers, this is same as createProfile
     
     // Extract amount based on request type
     const amount = isReturning 
@@ -311,10 +319,10 @@ serve(async (req) => {
               settingValue: JSON.stringify({
                 showEmail: false,
                 requiredEmail: false,
-                // addPaymentProfile enables customers to save NEW payment methods to their profile
-                // For returning customers, this adds to their existing profile
-                // For new customers (with createProfile=true), a new profile is created
-                addPaymentProfile: createProfile || !!customerProfileId
+                // addPaymentProfile enables saving payment methods
+                // For returning customers: adds new card to their existing profile
+                // For new customers: creates new profile if createProfile=true
+                addPaymentProfile: addPaymentToProfile || false
               })
             },
             {
