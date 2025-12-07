@@ -267,21 +267,21 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       let errorMessage = "Failed to initialize payment. Please try again.";
       let errorTitle = "Payment Initialization Error";
 
-      // Try to get the actual error from the response context
-      if (error.context?.body) {
-        try {
-          const errorBody = typeof error.context.body === 'string' 
-            ? JSON.parse(error.context.body) 
-            : error.context.body;
+      // Try to extract error message from FunctionsHttpError response
+      try {
+        if (error?.context && typeof error.context.json === 'function') {
+          const errorBody = await error.context.json();
+          console.log("Parsed error body:", errorBody);
+          setDebugInfo((prev) => ({ ...prev, errorBody }));
           if (errorBody?.error) {
             errorMessage = errorBody.error;
             if (errorBody.error.includes("No customer profile found")) {
               errorTitle = "Customer Not Found";
             }
           }
-        } catch (e) {
-          // Parsing failed, continue with default handling
         }
+      } catch (jsonError) {
+        console.error("Failed to parse error response:", jsonError);
       }
 
       // Fallback to enhanced error message handling
