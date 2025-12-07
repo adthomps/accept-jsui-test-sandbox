@@ -66,6 +66,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   const [isReturningCustomer, setIsReturningCustomer] = useState(false);
   const [existingCustomerEmail, setExistingCustomerEmail] = useState("");
   const [createProfile, setCreateProfile] = useState(true);
+  const [saveNewPaymentMethod, setSaveNewPaymentMethod] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState("");
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
@@ -153,8 +154,8 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       const requestPayload = isReturningCustomer ? {
         existingCustomerEmail: existingCustomerEmail,
         amount: parseFloat(customerInfo.amount),
-        // For returning customers, we add payment methods to their existing profile, not create a new one
-        addPaymentToProfile: true,
+        // For returning customers, optionally add new payment methods to their existing profile
+        addPaymentToProfile: saveNewPaymentMethod,
         returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
         cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
         debug: debugMode,
@@ -627,7 +628,7 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                       <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
                       <AlertDescription className="text-sm">
                         <strong>Profile Lookup:</strong> Customer information will be loaded from your saved profile. 
-                        You'll see your saved payment methods on the payment page.
+                        Your saved payment methods will be available on the payment page.
                       </AlertDescription>
                     </Alert>
                     
@@ -642,6 +643,34 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                         className={validationErrors.amount ? "border-destructive" : ""}
                       />
                       {validationErrors.amount && <p className="text-xs text-destructive">{validationErrors.amount}</p>}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="save-new-payment"
+                          checked={saveNewPaymentMethod}
+                          onCheckedChange={setSaveNewPaymentMethod}
+                        />
+                        <Label htmlFor="save-new-payment" className="cursor-pointer">
+                          Save new payment method to profile
+                        </Label>
+                      </div>
+                      
+                      {saveNewPaymentMethod ? (
+                        <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                          <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <AlertDescription className="text-sm">
+                            If you enter a new payment method, it will be saved to your profile for future use.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Use an existing saved payment method, or enter a new one for this transaction only.
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -792,8 +821,10 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
                   <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                     <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <AlertDescription className="text-sm">
-                      <strong>Returning Customer:</strong> Payment will be linked to the existing customer profile 
-                      ({existingCustomerEmail}). The new payment method will be added to their saved methods.
+                      <strong>Returning Customer:</strong> Payment will be linked to profile ({existingCustomerEmail}).
+                      {saveNewPaymentMethod 
+                        ? " New payment methods will be saved for future use."
+                        : " New payment methods will NOT be saved."}
                     </AlertDescription>
                   </Alert>
                 ) : createProfile ? (
