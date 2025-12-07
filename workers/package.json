@@ -1,0 +1,17 @@
+{
+  "name": "apt-acceptsuite-toolbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8787",
+    "build": "echo 'no build step configured'",
+    "publish": "wrangler publish --env production"
+  },
+  "dependencies": {
+    "hono": "^3.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

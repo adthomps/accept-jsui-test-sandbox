@@ -1,0 +1,9 @@
+AUTHORIZE_NET_API_LOGIN_ID=your_api_login_id_here
+AUTHORIZE_NET_TRANSACTION_KEY=your_transaction_key_here
+AUTHORIZE_NET_CLIENT_KEY=your_client_key_here
+
+# Optional bindings if you use D1 or KV locally
+# DB=your_d1_database_id
+# PENDING_KV=your_pending_kv_namespace
+
+# Copy this file to `.dev.vars` and fill in real values before running `wrangler dev`.

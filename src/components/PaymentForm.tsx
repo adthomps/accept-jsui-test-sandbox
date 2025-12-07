@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark, Code, ChevronDown, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { postJSON, API_BASE } from '@/lib/api';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
 
 interface CustomerInfo {
@@ -81,8 +81,8 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   useEffect(() => {
     const loadAuthConfigAndAcceptJS = async () => {
       try {
-        // First, get the auth configuration
-        const configResponse = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/get-auth-config');
+        // First, get the auth configuration from the Worker API
+        const configResponse = await fetch(`${API_BASE}/get-auth-config`);
         const config = await configResponse.json();
         
         if (!config.success) {
@@ -251,42 +251,33 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
         zip: customerInfo.zip,
       });
 
-      const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: {
-          opaqueData: paymentToken.opaqueData,
-          customerInfo: {
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            email: customerInfo.email,
-            phone: customerInfo.phone,
-            address: customerInfo.address,
-            city: customerInfo.city,
-            state: customerInfo.state,
-            zipCode: customerInfo.zip,
-            country: 'US', // Default to US, could be made configurable
-            amount: parseFloat(customerInfo.amount)
-          }
-        }
+      const data = await postJSON('/process-payment', {
+        opaqueData: paymentToken.opaqueData,
+        customerInfo: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone,
+          address: customerInfo.address,
+          city: customerInfo.city,
+          state: customerInfo.state,
+          zipCode: customerInfo.zip,
+          country: 'US',
+          amount: parseFloat(customerInfo.amount),
+        },
       });
 
-      if (error) {
-        console.error('Edge Function error:', error, (error as any)?.context);
-        throw new Error(error.message);
-      }
-
-      if (data.success) {
-        // Store detailed success response
+      if (data?.success) {
         setPaymentResponse(data);
         setResponseType('success');
         setShowResponseDetails(true);
-        
+
         toast({
-          title: "Payment Processed Successfully",
+          title: 'Payment Processed Successfully',
           description: `Transaction ID: ${data.transactionId}`,
-          variant: "default"
+          variant: 'default',
         });
-        
-        // Reset form after successful payment
+
         setPaymentToken(null);
         setCustomerInfo({
           firstName: '',
@@ -297,19 +288,18 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           city: '',
           state: '',
           zip: '',
-          amount: ''
+          amount: '',
         });
       } else {
-        // Store detailed failure response
         console.error('Gateway returned failure:', data);
         setPaymentResponse(data);
         setResponseType('failure');
         setShowResponseDetails(true);
-        
+
         toast({
-          title: "Payment Failed",
-          description: data.error || "Payment could not be processed",
-          variant: "destructive"
+          title: 'Payment Failed',
+          description: data?.error || 'Payment could not be processed',
+          variant: 'destructive',
         });
         return;
       }

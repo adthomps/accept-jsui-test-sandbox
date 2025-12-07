@@ -1,0 +1,25 @@
+name = "apt_acceptsuite_worker"
+main = "src/index.js"
+compatibility_date = "2025-12-07"
+type = "javascript"
+
+account_id = "257b7e468437a1105470c725617d9268"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "PENDING_KV"
+# KV namespace display name (recommended): apt_acceptsuite_kv
+# Replace with the KV namespace id returned by Cloudflare, e.g. "abcd1234..."
+id = "<KV_NAMESPACE_ID>"
+
+[[d1_databases]]
+binding = "DB"
+# D1 database name (recommended): apt_acceptsuite_d1
+database_name = "apt_acceptsuite_d1"
+# Replace with your D1 database id returned by Cloudflare, e.g.
+# "00000000-0000-0000-0000-000000000000"
+database_id = "<D1_DATABASE_ID>"
+
+# NOTE: For local dev these bindings may be omitted or set in a separate
+# `[env.dev]`/`[env.production]` section. Use `wrangler d1 create` and the
+# Cloudflare dashboard to obtain real `database_id` and KV `id` values.

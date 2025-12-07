@@ -71,3 +71,10 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Local development notes
+
+- Authorize.Net hosted pages require `hostedPaymentReturnOptions.url` (and related URL settings) to be absolute `http://` or `https://` URLs. Local `http://localhost` URLs can be rejected by the gateway and may produce errors like `E00013 Invalid Setting Value`.
+- For local testing this project rewrites `localhost` return/cancel origins to `https://www.authorize.net` when generating hosted tokens. This is a development convenience only — production integrations must use your real, secure callback URLs.
+- Alternative for full end-to-end testing: expose your local frontend via an HTTPS tunnel (for example `ngrok`) and use that public HTTPS URL as your `returnUrl`/`cancelUrl`.
+- To run the Workers locally you can provide Authorize.Net keys in `workers/.dev.vars` (copy `workers/.dev.vars.example`), then run `cd workers && npm run dev`.

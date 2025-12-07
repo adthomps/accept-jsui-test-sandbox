@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, ChevronDown, Code, Globe, Monitor, X, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { postJSON } from "@/lib/api";
 import { z } from "zod";
 
 type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
@@ -256,53 +256,18 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
       // Store request for debugging
       setDebugInfo((prev) => ({ ...prev, requestPayload }));
 
-      const { data, error } = await supabase.functions.invoke("accept-hosted-token", {
-        body: requestPayload,
-      });
+      const data = await postJSON('/accept-hosted-token', requestPayload);
 
       setProcessingStep("Generating secure payment token...");
-      console.log("🔵 Step 2: Edge function response:", { data, error });
+      console.log("🔵 Step 2: Edge function response:", { data });
 
       // Store response for debugging
       setDebugInfo((prev) => ({
         ...prev,
         responseData: data,
-        error: error,
         authorizeNetRequest: data?.debug?.request,
         authorizeNetResponse: data?.debug?.response,
       }));
-
-      if (error) {
-        console.error("Supabase function invocation error:", error);
-        
-        // Try to extract the actual error message from FunctionsHttpError
-        let errorMessage = error.message;
-        let errorTitle = "Payment Initialization Error";
-        
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const errorBody = await error.context.json();
-            console.log("Parsed error body:", errorBody);
-            setDebugInfo((prev) => ({ ...prev, errorBody }));
-            if (errorBody?.error) {
-              errorMessage = errorBody.error;
-              if (errorBody.error.includes("No customer profile found")) {
-                errorTitle = "Customer Not Found";
-              }
-            }
-          }
-        } catch (jsonError) {
-          console.error("Failed to parse error response:", jsonError);
-        }
-        
-        toast({
-          title: errorTitle,
-          description: errorMessage,
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
-      }
 
       if (!data) {
         throw new Error("No response data received from payment service");

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff, Code, ChevronDown, ShieldCheck } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { postJSON, API_BASE } from '@/lib/api';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
 
 declare global {
@@ -72,7 +72,7 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     const loadAuthConfigAndAcceptUI = async () => {
       try {
         // Get auth configuration
-        const configResponse = await fetch('https://pzzzcxspasbswpxzdqku.supabase.co/functions/v1/get-auth-config');
+        const configResponse = await fetch(`${API_BASE}/get-auth-config`);
         const config = await configResponse.json();
         
         if (!config.success) {
@@ -251,29 +251,23 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
     try {
       console.log('AcceptUI v3 - Processing payment with token');
 
-      const { data, error } = await supabase.functions.invoke('process-payment', {
-        body: {
-          opaqueData: paymentToken.opaqueData,
-          customerInfo: {
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            email: customerInfo.email,
-            phone: customerInfo.phone,
-            address: customerInfo.address,
-            city: customerInfo.city,
-            state: customerInfo.state,
-            zipCode: customerInfo.zip,
-            country: 'US',
-            amount: parseFloat(customerInfo.amount)
-          }
+      const data = await postJSON('/process-payment', {
+        opaqueData: paymentToken.opaqueData,
+        customerInfo: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone,
+          address: customerInfo.address,
+          city: customerInfo.city,
+          state: customerInfo.state,
+          zipCode: customerInfo.zip,
+          country: 'US',
+          amount: parseFloat(customerInfo.amount)
         }
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data.success) {
+      if (data?.success) {
         setPaymentResponse(data);
         setShowResponseDetails(true);
         

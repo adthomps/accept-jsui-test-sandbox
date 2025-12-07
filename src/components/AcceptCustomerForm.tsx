@@ -10,7 +10,7 @@ import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { supabase } from '@/integrations/supabase/client';
+import { postJSON } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -165,12 +165,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
 
   const loadCustomerProfiles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('customer_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await postJSON('/customer-profiles', {});
       setCustomerProfiles(data || []);
     } catch (error) {
       console.error('Error loading customer profiles:', error);
@@ -182,20 +177,16 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     setDebugInfo(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-customer-profile', {
-        body: {
-          customerInfo,
-          debug: debugMode
-        }
+      const data = await postJSON('/create-customer-profile', {
+        customerInfo,
+        debug: debugMode,
       });
 
-      if (error) throw error;
-
-      if (debugMode && data.debug) {
+      if (debugMode && data?.debug) {
         setDebugInfo(data.debug);
       }
 
-      if (data.success) {
+      if (data?.success) {
         const newProfileId = data.customerProfileId;
         toast({
           title: "Customer Profile Created",
@@ -240,20 +231,16 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     setDebugInfo(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('get-customer-profile', {
-        body: {
-          customerProfileId: profileId,
-          debug: debugMode
-        }
+      const data = await postJSON('/get-customer-profile', {
+        customerProfileId: profileId,
+        debug: debugMode,
       });
 
-      if (error) throw error;
-
-      if (debugMode && data.debug) {
+      if (debugMode && data?.debug) {
         setDebugInfo(data.debug);
       }
 
-      if (data.success && data.profile) {
+      if (data?.success && data.profile) {
         setFetchedProfile(data.profile);
         toast({
           title: "Profile Fetched",
@@ -328,17 +315,13 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         requestBody.iframeCommunicatorUrl = getIframeCommunicatorUrl();
       }
 
-      const { data, error } = await supabase.functions.invoke('get-hosted-profile-token', {
-        body: requestBody
-      });
+      const data = await postJSON('/get-hosted-profile-token', requestBody);
 
-      if (error) throw error;
-
-      if (debugMode && data.debug) {
+      if (debugMode && data?.debug) {
         setDebugInfo(data.debug);
       }
 
-      if (data.success && data.token) {
+      if (data?.success && data.token) {
         setGeneratedToken(data.token);
         setGatewayUrl(data.gatewayUrl);
 
@@ -407,28 +390,24 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     setDebugInfo(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('charge-customer-profile', {
-        body: {
-          customerProfileId: selectedCustomerId,
-          customerPaymentProfileId: chargePaymentProfileId || undefined,
-          amount: parseFloat(paymentAmount),
-          debug: debugMode
-        }
+      const data = await postJSON('/charge-customer-profile', {
+        customerProfileId: selectedCustomerId,
+        customerPaymentProfileId: chargePaymentProfileId || undefined,
+        amount: parseFloat(paymentAmount),
+        debug: debugMode,
       });
 
-      if (error) throw error;
-
-      if (debugMode && data.debug) {
+      if (debugMode && data?.debug) {
         setDebugInfo(data.debug);
       }
 
-      if (data.success) {
+      if (data?.success) {
         toast({
-          title: "Payment Successful",
+          title: 'Payment Successful',
           description: `Transaction ID: ${data.transactionId}`,
         });
       } else {
-        throw new Error(data.error || 'Payment failed');
+        throw new Error(data?.error || 'Payment failed');
       }
     } catch (error: any) {
       console.error('Error charging customer profile:', error);
