@@ -51,12 +51,13 @@ const PaymentMethodSelector = () => {
         </div>
 
         {/* Method Comparison */}
-        <Tabs defaultValue="comparison" className="w-full max-w-5xl">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="comparison">Compare Methods</TabsTrigger>
-            <TabsTrigger value="acceptjs">AcceptJS Details</TabsTrigger>
-            <TabsTrigger value="acceptui">AcceptUI Details</TabsTrigger>
-            <TabsTrigger value="accepthosted">Accept Hosted Details</TabsTrigger>
+        <Tabs defaultValue="comparison" className="w-full max-w-6xl">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="comparison">Compare</TabsTrigger>
+            <TabsTrigger value="acceptjs">AcceptJS</TabsTrigger>
+            <TabsTrigger value="acceptui">AcceptUI</TabsTrigger>
+            <TabsTrigger value="accepthosted">Accept Hosted</TabsTrigger>
+            <TabsTrigger value="acceptcustomer">Accept Customer</TabsTrigger>
           </TabsList>
 
           <TabsContent value="comparison" className="mt-6">
@@ -341,6 +342,69 @@ const PaymentMethodSelector = () => {
                   className="w-full shadow-button"
                 >
                   Start Accept Hosted Testing
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="acceptcustomer" className="space-y-6">
+            <Card className="shadow-card bg-gradient-card">
+              <CardHeader>
+                <CardTitle>Accept Customer (CIM) Technical Details</CardTitle>
+                <CardDescription>
+                  Understanding the Customer Information Manager implementation and workflow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Implementation Steps</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Create customer profile via CIM API</li>
+                      <li>Store payment methods securely</li>
+                      <li>Use hosted forms for profile management</li>
+                      <li>Charge saved payment profiles</li>
+                      <li>Manage shipping addresses</li>
+                    </ol>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Security Features</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>PCI-compliant token storage</li>
+                      <li>Hosted profile management pages</li>
+                      <li>No card data on your servers</li>
+                      <li>Secure recurring billing</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Available Operations</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Create Profile (Direct API)</li>
+                      <li>Get Profile (Direct API)</li>
+                      <li>Manage Profile (Hosted Form)</li>
+                      <li>Add/Edit Payment Methods (Hosted Form)</li>
+                      <li>Charge Profile (Direct API)</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Best Use Cases</h3>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                      <li>Subscription billing</li>
+                      <li>Returning customer payments</li>
+                      <li>Saved payment methods</li>
+                      <li>Multi-payment profile customers</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => setSelectedMethod('acceptcustomer')}
+                  className="w-full shadow-button"
+                >
+                  Start Accept Customer Testing
                 </Button>
               </CardContent>
             </Card>
