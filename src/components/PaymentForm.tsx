@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Shield, CreditCard, User, MapPin, Eye, EyeOff, ArrowLeft, Landmark, Code, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
@@ -69,6 +71,11 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
   const [paymentResponse, setPaymentResponse] = useState<any>(null);
   const [showResponseDetails, setShowResponseDetails] = useState(true);
   const [responseType, setResponseType] = useState<'success' | 'failure' | null>(null);
+  
+  // Debug mode
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Load auth config and AcceptJS library
   useEffect(() => {
@@ -369,6 +376,27 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           </div>
         </div>
 
+        {/* Debug Mode Toggle */}
+        <Card className="shadow-card bg-gradient-card border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
+                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
+                  <Code className="h-4 w-4 text-primary" />
+                  Debug Mode - View API request/response details
+                </Label>
+              </div>
+              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
+            </div>
+            {debugMode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                When enabled, API requests and responses will be displayed for troubleshooting and development.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Integration Architecture Info */}
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
@@ -398,7 +426,7 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
                 <span className="text-xs text-muted-foreground">Edge Function</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Your server receives only the opaque payment nonce and submits it to Authorize.Net for processing.
+                Server receives only the payment nonce and processes the transaction via Authorize.Net API.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 <strong>Supports:</strong> Credit Cards, Debit Cards, eCheck/ACH
@@ -406,6 +434,46 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Debug Info Panel */}
+        {debugMode && debugInfo && (
+          <Collapsible open={showDebug} onOpenChange={setShowDebug}>
+            <Card className="border-yellow-500/50 bg-yellow-500/5">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Code className="h-4 w-4" />
+                      Debug Information
+                    </CardTitle>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showDebug ? 'rotate-180' : ''}`} />
+                  </div>
+                  <CardDescription>API request and response details for troubleshooting</CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {debugInfo.request && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">API Request</Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.request, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {debugInfo.response && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">API Response</Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.response, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Customer Information */}

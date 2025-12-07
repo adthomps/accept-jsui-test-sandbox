@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Shield, CreditCard, User, Eye, EyeOff, Code, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import PaymentResponseDisplay from './PaymentResponseDisplay';
 
@@ -61,6 +63,11 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
   const [showResponseDetails, setShowResponseDetails] = useState(true);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
   const acceptUIButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Debug mode
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   useEffect(() => {
     const loadAuthConfigAndAcceptUI = async () => {
       try {
@@ -356,6 +363,27 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           </div>
         </div>
 
+        {/* Debug Mode Toggle */}
+        <Card className="shadow-card bg-gradient-card border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
+                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
+                  <Code className="h-4 w-4 text-primary" />
+                  Debug Mode - View API request/response details
+                </Label>
+              </div>
+              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
+            </div>
+            {debugMode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                When enabled, API requests and responses will be displayed for troubleshooting and development.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Integration Architecture Info */}
         <Card className="border-blue-500/50 bg-blue-500/5">
           <CardHeader>
@@ -394,6 +422,46 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Debug Info Panel */}
+        {debugMode && debugInfo && (
+          <Collapsible open={showDebug} onOpenChange={setShowDebug}>
+            <Card className="border-yellow-500/50 bg-yellow-500/5">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-accent/5 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Code className="h-4 w-4" />
+                      Debug Information
+                    </CardTitle>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showDebug ? 'rotate-180' : ''}`} />
+                  </div>
+                  <CardDescription>API request and response details for troubleshooting</CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {debugInfo.request && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">API Request</Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.request, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {debugInfo.response && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">API Response</Label>
+                      <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border max-h-48">
+                        {JSON.stringify(debugInfo.response, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Customer Information */}
