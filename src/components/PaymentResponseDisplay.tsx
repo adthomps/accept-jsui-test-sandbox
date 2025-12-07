@@ -227,6 +227,33 @@ const PaymentResponseDisplay = ({ response, onDismiss }: PaymentResponseDisplayP
         {/* Failure Details */}
         {!response.success && (
           <div className="space-y-4">
+            {/* Show Transaction ID for failed transactions if available */}
+            {(response.transactionId || response.rawResponse?.transactionResponse?.transId) && (
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground">Transaction ID</label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      {response.transactionId || response.rawResponse?.transactionResponse?.transId}
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => copyToClipboard(
+                        response.transactionId || response.rawResponse?.transactionResponse?.transId || '', 
+                        'Transaction ID'
+                      )}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use this ID when contacting support about this transaction
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Alert variant="destructive">
               <XCircle className="h-4 w-4" />
               <AlertDescription>
