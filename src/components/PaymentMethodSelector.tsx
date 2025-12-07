@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Code, Globe, ArrowRight, CheckCircle } from 'lucide-react';
+import { Shield, Code, Globe, ArrowRight, CheckCircle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PaymentForm from './PaymentForm';
 import AcceptUIForm from './AcceptUIForm';
@@ -65,11 +65,17 @@ const PaymentMethodSelector = () => {
               {/* AcceptJS Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    AcceptJS
-                    <Badge variant="secondary">SAQ A-EP</Badge>
-                  </CardTitle>
-                  <CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle>AcceptJS</CardTitle>
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                      <ShieldAlert className="h-3 w-3" />
+                      SAQ A-EP
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                    Card data enters your page (higher PCI scope)
+                  </div>
+                  <CardDescription className="mt-2">
                     Client-side tokenization with custom payment forms
                   </CardDescription>
                 </CardHeader>
@@ -113,11 +119,17 @@ const PaymentMethodSelector = () => {
               {/* AcceptUI Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    AcceptUI
-                    <Badge variant="secondary">SAQ-A</Badge>
-                  </CardTitle>
-                  <CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle>AcceptUI</CardTitle>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      SAQ-A
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                    No card data on your page (lowest PCI scope)
+                  </div>
+                  <CardDescription className="mt-2">
                     Hosted modal lightbox for quick integration
                   </CardDescription>
                 </CardHeader>
@@ -161,11 +173,17 @@ const PaymentMethodSelector = () => {
               {/* Accept Hosted Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Accept Hosted
-                    <Badge variant="secondary">SAQ-A</Badge>
-                  </CardTitle>
-                  <CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle>Accept Hosted</CardTitle>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      SAQ-A
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                    No card data on your page (lowest PCI scope)
+                  </div>
+                  <CardDescription className="mt-2">
                     Flexible hosted payment with multiple display options
                   </CardDescription>
                 </CardHeader>
@@ -202,11 +220,22 @@ const PaymentMethodSelector = () => {
               {/* Accept Customer Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Accept Customer
-                    <Badge variant="secondary">CIM</Badge>
-                  </CardTitle>
-                  <CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle>Accept Customer</CardTitle>
+                    <div className="flex gap-1">
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                        <ShieldCheck className="h-3 w-3" />
+                        SAQ-A
+                      </Badge>
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+                        CIM
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                    Hosted forms + Direct API for stored profiles
+                  </div>
+                  <CardDescription className="mt-2">
                     Stored payment profiles for recurring use
                   </CardDescription>
                 </CardHeader>
