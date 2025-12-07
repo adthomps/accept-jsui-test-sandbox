@@ -78,7 +78,11 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             reference_id: referenceId,
-            customer_info: customerInfo,
+            customer_info: {
+              ...customerInfo,
+              // Store the existing customer profile ID for webhook processing
+              existingCustomerProfileId: null // Will be set below if found
+            },
             amount: customerInfo.amount,
             create_profile: createProfile || false
           })
@@ -239,11 +243,32 @@ serve(async (req) => {
       },
     };
 
-    // Add customer profile ID to transactionRequest.profile if found
-    if (customerProfileId) {
-      tokenRequest.getHostedPaymentPageRequest.transactionRequest.profile = {
-        customerProfileId: customerProfileId
-      };
+    // Note: getHostedPaymentPageRequest does NOT support linking to existing customer profiles
+    // via transactionRequest.profile. The hosted payment page only collects new payment info.
+    // If we have an existing customerProfileId, we store it in pending_payments for 
+    // the webhook to use when processing the completed transaction.
+    if (customerProfileId && supabaseUrl && supabaseServiceKey) {
+      try {
+        // Update the pending_payments record with the existing customer profile ID
+        await fetch(`${supabaseUrl}/rest/v1/pending_payments?reference_id=eq.${referenceId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            customer_info: {
+              ...customerInfo,
+              existingCustomerProfileId: customerProfileId
+            }
+          })
+        });
+        console.log('✅ Updated pending_payments with existing customerProfileId:', customerProfileId);
+      } catch (error) {
+        console.warn('⚠️ Error updating pending_payments with profile ID:', error);
+      }
     }
 
     console.log('🔵 Step 4: Sending request to Authorize.Net API');
