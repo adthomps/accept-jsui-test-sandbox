@@ -352,6 +352,45 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           </div>
         </div>
 
+        {/* Integration Architecture Info */}
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Integration Architecture
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">AcceptUI Hosted Modal</Badge>
+                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Payment form is rendered in a secure iframe modal hosted by Authorize.Net.
+                Your page never handles or sees sensitive card data.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Flow:</strong> Button Click → Authorize.Net Modal → Payment Token → Your Handler
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs">Lightbox Integration</Badge>
+                <span className="text-xs text-muted-foreground">v3/AcceptUI.js</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Uses data attributes on a button element to configure the payment modal.
+                Response handler receives the payment nonce for server processing.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Supports:</strong> Credit Cards, Debit Cards, eCheck/ACH, Billing Address Collection
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Customer Information */}
           <Card className="shadow-card bg-gradient-card">
