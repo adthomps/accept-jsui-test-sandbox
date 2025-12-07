@@ -65,14 +65,14 @@ const PaymentMethodSelector = () => {
               {/* AcceptJS Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle>AcceptJS</CardTitle>
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                  <CardTitle className="flex items-center gap-2 flex-wrap">
+                    <span>AcceptJS</span>
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1 shrink-0">
                       <ShieldAlert className="h-3 w-3" />
                       SAQ A-EP
                     </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                  </CardTitle>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block mt-2">
                     Card data enters your page (higher PCI scope)
                   </div>
                   <CardDescription className="mt-2">
@@ -119,14 +119,14 @@ const PaymentMethodSelector = () => {
               {/* AcceptUI Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle>AcceptUI</CardTitle>
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                  <CardTitle className="flex items-center gap-2 flex-wrap">
+                    <span>AcceptUI</span>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 shrink-0">
                       <ShieldCheck className="h-3 w-3" />
                       SAQ-A
                     </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                  </CardTitle>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block mt-2">
                     No card data on your page (lowest PCI scope)
                   </div>
                   <CardDescription className="mt-2">
@@ -173,14 +173,14 @@ const PaymentMethodSelector = () => {
               {/* Accept Hosted Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle>Accept Hosted</CardTitle>
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                  <CardTitle className="flex items-center gap-2 flex-wrap">
+                    <span>Accept Hosted</span>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 shrink-0">
                       <ShieldCheck className="h-3 w-3" />
                       SAQ-A
                     </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                  </CardTitle>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block mt-2">
                     No card data on your page (lowest PCI scope)
                   </div>
                   <CardDescription className="mt-2">
@@ -220,19 +220,14 @@ const PaymentMethodSelector = () => {
               {/* Accept Customer Card */}
               <Card className="border-primary/20 flex flex-col">
                 <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle>Accept Customer</CardTitle>
-                    <div className="flex gap-1">
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
-                        <ShieldCheck className="h-3 w-3" />
-                        SAQ-A
-                      </Badge>
-                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
-                        CIM
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block">
+                  <CardTitle className="flex items-center gap-2 flex-wrap">
+                    <span>Accept Customer</span>
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1 shrink-0">
+                      <ShieldCheck className="h-3 w-3" />
+                      SAQ-A
+                    </Badge>
+                  </CardTitle>
+                  <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 inline-block mt-2">
                     Hosted forms + Direct API for stored profiles
                   </div>
                   <CardDescription className="mt-2">
