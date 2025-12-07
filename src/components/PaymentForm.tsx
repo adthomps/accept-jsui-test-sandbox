@@ -365,6 +365,44 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           </Badge>
         </div>
 
+        {/* Integration Architecture Info */}
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Integration Architecture
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">Accept.js Client-Side</Badge>
+                <span className="text-xs text-muted-foreground">SAQ A-EP Compliant</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Payment data is tokenized directly in the browser using Authorize.Net's Accept.js library.
+                Card details never touch your server - only the secure payment nonce is transmitted.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Flow:</strong> Browser → Accept.js → Payment Token → Your Server → Authorize.Net
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs">Server Processing</Badge>
+                <span className="text-xs text-muted-foreground">Edge Function</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Your server receives only the opaque payment nonce and submits it to Authorize.Net for processing.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Supports:</strong> Credit Cards, Debit Cards, eCheck/ACH
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Customer Information */}
           <Card className="shadow-card bg-gradient-card">

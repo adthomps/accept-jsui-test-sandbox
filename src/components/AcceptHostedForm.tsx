@@ -392,6 +392,45 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           </div>
         </div>
 
+        {/* Integration Architecture Info */}
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Integration Architecture
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="default" className="text-xs">Accept Hosted Redirect</Badge>
+                <span className="text-xs text-muted-foreground">SAQ-A Compliant</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Customer is redirected to Authorize.Net's fully hosted payment page.
+                Your server only generates the session token - no card data handling.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Flow:</strong> Server Token → Redirect to Authorize.Net → Payment → Return URL
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-xs">Customer Profiles</Badge>
+                <span className="text-xs text-muted-foreground">CIM Integration</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Supports both new customers and returning customers with saved payment methods.
+                Returning customers can use existing profiles or add new payment methods.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong>Supports:</strong> One-time Payments, Profile Creation, Saved Payment Methods
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Debug Mode Toggle */}
         <Card className="shadow-card bg-gradient-card border-primary/20">
           <CardContent className="pt-6">
