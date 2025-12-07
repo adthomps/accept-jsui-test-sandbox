@@ -71,6 +71,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
   const [pageType, setPageType] = useState<'manage' | 'addPayment' | 'addShipping' | 'editPayment' | 'editShipping'>('manage');
   const [paymentProfileId, setPaymentProfileId] = useState('');
   const [shippingAddressId, setShippingAddressId] = useState('');
+  const [chargePaymentProfileId, setChargePaymentProfileId] = useState('');
 
   // Form states
   const [customerInfo, setCustomerInfo] = useState({
@@ -312,6 +313,7 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
       const { data, error } = await supabase.functions.invoke('charge-customer-profile', {
         body: {
           customerProfileId: selectedCustomerId,
+          customerPaymentProfileId: chargePaymentProfileId || undefined,
           amount: parseFloat(paymentAmount),
           debug: debugMode
         }
@@ -1061,16 +1063,48 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Select a customer profile with saved payment methods to charge
+                    Enter a customer profile ID and optionally a specific payment profile ID to charge
                   </AlertDescription>
                 </Alert>
-                <div className="space-y-4">
-                  {customerProfiles.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No customer profiles found. Create one first.
-                    </div>
-                  ) : (
-                    customerProfiles.map((profile) => (
+                
+                {/* Customer Profile ID */}
+                <div className="space-y-2">
+                  <Label htmlFor="chargeCustomerProfileId">Customer Profile ID</Label>
+                  <Input
+                    id="chargeCustomerProfileId"
+                    placeholder="e.g., 524732491"
+                    value={selectedCustomerId || ''}
+                    onChange={(e) => {
+                      setSelectedCustomerId(e.target.value);
+                      if (e.target.value) {
+                        localStorage.setItem('selectedCustomerProfileId', e.target.value);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The customer profile to charge (required)
+                  </p>
+                </div>
+
+                {/* Payment Profile ID */}
+                <div className="space-y-2">
+                  <Label htmlFor="chargePaymentProfileId">Payment Profile ID</Label>
+                  <Input
+                    id="chargePaymentProfileId"
+                    placeholder="e.g., 536896667 (optional - uses first if blank)"
+                    value={chargePaymentProfileId}
+                    onChange={(e) => setChargePaymentProfileId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Specific payment method to charge (optional - if blank, charges the first/default payment profile)
+                  </p>
+                </div>
+
+                {/* Existing Profile List */}
+                {customerProfiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Or select from existing profiles:</Label>
+                    {customerProfiles.map((profile) => (
                       <Card
                         key={profile.id}
                         className={`cursor-pointer transition-colors ${
@@ -1090,6 +1124,9 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                                 {profile.first_name} {profile.last_name}
                               </p>
                               <p className="text-sm text-muted-foreground">{profile.email}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Profile ID: {profile.authorize_net_customer_profile_id}
+                              </p>
                             </div>
                             {selectedCustomerId === profile.authorize_net_customer_profile_id && (
                               <CheckCircle className="h-5 w-5 text-primary" />
@@ -1097,9 +1134,10 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
                           </div>
                         </CardContent>
                       </Card>
-                    ))
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount</Label>
                   <Input

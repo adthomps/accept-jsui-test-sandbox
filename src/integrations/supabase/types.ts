@@ -193,10 +193,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_pending_payments: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_pending_payments: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
