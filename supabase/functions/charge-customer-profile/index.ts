@@ -19,13 +19,27 @@ serve(async (req) => {
 
   try {
     console.log('🔵 Charging customer profile');
-    const { customerProfileId, amount, debug } = await req.json();
+    const { customerProfileId, customerPaymentProfileId, amount, debug } = await req.json();
 
     const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
     const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
 
     if (!apiLoginId || !transactionKey) {
       throw new Error('Authorize.Net credentials not configured');
+    }
+
+    // Build profile object - include payment profile ID if provided
+    const profileData: { customerProfileId: string; paymentProfile?: { paymentProfileId: string } } = {
+      customerProfileId: customerProfileId
+    };
+
+    if (customerPaymentProfileId) {
+      profileData.paymentProfile = {
+        paymentProfileId: customerPaymentProfileId
+      };
+      console.log('📝 Using specific payment profile:', customerPaymentProfileId);
+    } else {
+      console.log('📝 No payment profile specified, will use default/first payment profile');
     }
 
     // Create transaction request
@@ -39,9 +53,7 @@ serve(async (req) => {
         transactionRequest: {
           transactionType: "authCaptureTransaction",
           amount: amount.toString(),
-          profile: {
-            customerProfileId: customerProfileId
-          }
+          profile: profileData
         }
       }
     };
