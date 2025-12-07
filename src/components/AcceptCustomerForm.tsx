@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, User, CreditCard, Shield, AlertCircle, CheckCircle, Loader2, Copy, Eye, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -382,21 +383,23 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
         </div>
 
         {/* Debug Mode Toggle */}
-        <Card className="border-dashed">
+        <Card className="shadow-card bg-gradient-card border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Debug Mode</span>
+              <div className="flex items-center space-x-2">
+                <Switch id="debug-mode" checked={debugMode} onCheckedChange={setDebugMode} />
+                <Label htmlFor="debug-mode" className="flex items-center gap-2 cursor-pointer">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  Debug Mode - View API request/response details
+                </Label>
               </div>
-              <Button
-                variant={debugMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDebugMode(!debugMode)}
-              >
-                {debugMode ? 'Enabled' : 'Disabled'}
-              </Button>
+              {debugMode && <Badge variant="secondary">Debug Mode Active</Badge>}
             </div>
+            {debugMode && (
+              <p className="text-xs text-muted-foreground mt-2">
+                When enabled, API requests and responses will be displayed for troubleshooting and development.
+              </p>
+            )}
           </CardContent>
         </Card>
 
