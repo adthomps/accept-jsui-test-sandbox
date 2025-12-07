@@ -397,55 +397,6 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
           </CardContent>
         </Card>
 
-        {/* Integration Architecture Info */}
-        <Card className="border-blue-500/50 bg-blue-500/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Integration Architecture
-              </CardTitle>
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
-                <ShieldAlert className="h-3 w-3" />
-                SAQ A-EP
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                <strong>Higher PCI Scope:</strong> Card data enters your page before tokenization. 
-                You must complete SAQ A-EP self-assessment questionnaire.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="default" className="text-xs">Accept.js Client-Side</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Payment data is tokenized directly in the browser using Authorize.Net's Accept.js library.
-                Card details never touch your server - only the secure payment nonce is transmitted.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Flow:</strong> Browser → Accept.js → Payment Token → Your Server → Authorize.Net
-              </p>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className="text-xs">Server Processing</Badge>
-                <span className="text-xs text-muted-foreground">Edge Function</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Server receives only the payment nonce and processes the transaction via Authorize.Net API.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Supports:</strong> Credit Cards, Debit Cards, eCheck/ACH
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Debug Info Panel */}
         {debugMode && debugInfo && (
           <Collapsible open={showDebug} onOpenChange={setShowDebug}>

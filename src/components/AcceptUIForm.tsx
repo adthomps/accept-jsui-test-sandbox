@@ -384,56 +384,6 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
           </CardContent>
         </Card>
 
-        {/* Integration Architecture Info */}
-        <Card className="border-blue-500/50 bg-blue-500/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Integration Architecture
-              </CardTitle>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
-                <ShieldCheck className="h-3 w-3" />
-                SAQ-A
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                <strong>Lowest PCI Scope:</strong> Card data never touches your page. 
-                Authorize.Net's hosted modal handles all sensitive data collection.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="default" className="text-xs">AcceptUI Hosted Modal</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Payment form is rendered in a secure iframe modal hosted by Authorize.Net.
-                Your page never handles or sees sensitive card data.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Flow:</strong> Button Click → Authorize.Net Modal → Payment Token → Your Handler
-              </p>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className="text-xs">Lightbox Integration</Badge>
-                <span className="text-xs text-muted-foreground">v3/AcceptUI.js</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Uses data attributes on a button element to configure the payment modal.
-                Response handler receives the payment nonce for server processing.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <strong>Supports:</strong> Credit Cards, Debit Cards, eCheck/ACH, Billing Address Collection
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Debug Info Panel */}
         {debugMode && debugInfo && (
           <Collapsible open={showDebug} onOpenChange={setShowDebug}>
