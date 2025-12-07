@@ -152,26 +152,26 @@ const PaymentMethodSelector = () => {
                     <Badge variant="secondary">SAQ-A</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Full-page hosted payment with profiles
+                    Flexible hosted payment with multiple display options
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
                   <div>
-                    <h4 className="font-medium mb-2">Key Features:</h4>
+                    <h4 className="font-medium mb-2">Display Methods:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Server-side token flow</li>
-                      <li>• Customer profile support</li>
-                      <li>• Webhook integration</li>
-                      <li>• Returning customers</li>
+                      <li>• Full Page Redirect</li>
+                      <li>• Lightbox (Popup)</li>
+                      <li>• Embedded iFrame</li>
+                      <li>• Customer profiles</li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="font-medium mb-2">Best For:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Enterprise applications</li>
-                      <li>• Complex payment flows</li>
+                      <li>• Multi-step checkouts</li>
                       <li>• Maximum security</li>
-                      <li>• Profile management</li>
+                      <li>• Flexible UX needs</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -365,19 +365,77 @@ const PaymentMethodSelector = () => {
               <CardHeader>
                 <CardTitle>Accept Hosted Technical Details</CardTitle>
                 <CardDescription>
-                  Full-page hosted payment with customer profile support
+                  Flexible hosted payment with multiple display methods and customer profile support
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Display Methods Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Display Methods</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Card className="bg-muted/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Full Page Redirect
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-sm text-muted-foreground space-y-2">
+                        <p>Customer leaves your site and completes payment on Authorize.Net's hosted page.</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Simplest implementation</li>
+                          <li>No iFrame communication</li>
+                          <li>Return URL for completion</li>
+                          <li>Best for simple checkouts</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-muted/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          Lightbox (Popup)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-sm text-muted-foreground space-y-2">
+                        <p>Payment form appears as a modal overlay on your page using iFrame communication.</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Customer stays on your site</li>
+                          <li>iFrameCommunicator required</li>
+                          <li>Real-time status updates</li>
+                          <li>Best for seamless UX</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-muted/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Embedded iFrame
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-sm text-muted-foreground space-y-2">
+                        <p>Payment form embedded directly within your page layout using an iFrame.</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Inline payment experience</li>
+                          <li>iFrameCommunicator required</li>
+                          <li>Custom page integration</li>
+                          <li>Best for multi-step flows</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="font-semibold">Implementation Steps</h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
                       <li>Server generates hosted payment token</li>
-                      <li>Redirect customer to Authorize.Net</li>
-                      <li>Customer completes payment on hosted page</li>
-                      <li>Authorize.Net processes transaction</li>
-                      <li>Customer redirected to return URL</li>
+                      <li>Choose display method (redirect/lightbox/iFrame)</li>
+                      <li>Configure iFrameCommunicator if using overlay</li>
+                      <li>Customer completes payment on hosted form</li>
+                      <li>Handle return/message based on display method</li>
                       <li>Webhook confirms transaction status</li>
                     </ol>
                   </div>
@@ -397,21 +455,21 @@ const PaymentMethodSelector = () => {
                   <div className="space-y-4">
                     <h3 className="font-semibold">Available Options</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                      <li>One-time payments</li>
+                      <li>Full Page Redirect (simplest)</li>
+                      <li>Lightbox Popup (overlay modal)</li>
+                      <li>Embedded iFrame (inline form)</li>
                       <li>Customer profile creation</li>
                       <li>Returning customer support</li>
-                      <li>Save payment for future use</li>
-                      <li>Customizable hosted page</li>
                     </ul>
                   </div>
                   <div className="space-y-4">
                     <h3 className="font-semibold">Best Use Cases</h3>
                     <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
                       <li>Enterprise applications</li>
-                      <li>Complex payment flows</li>
+                      <li>Multi-step checkout flows</li>
                       <li>Returning customer payments</li>
                       <li>Maximum security required</li>
-                      <li>Webhook-driven architecture</li>
+                      <li>Flexible display requirements</li>
                     </ul>
                   </div>
                 </div>
