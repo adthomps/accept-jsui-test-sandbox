@@ -331,23 +331,27 @@ const AcceptUIForm = ({ onBack }: AcceptUIFormProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AcceptUI v3 Testing
+              AcceptUI Payment
             </h1>
             <p className="text-muted-foreground">
-              Testing v3/AcceptUI.js library with fallback to dispatchData method
+              Hosted modal lightbox for secure payment entry
             </p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
             <Badge variant="secondary" className="gap-2">
               <Shield className="h-4 w-4" />
-              v3/AcceptUI.js
+              SAQ-A
+            </Badge>
+            <Badge variant="outline" className="gap-2">
+              <CreditCard className="h-4 w-4" />
+              Lightbox
             </Badge>
           </div>
         </div>
