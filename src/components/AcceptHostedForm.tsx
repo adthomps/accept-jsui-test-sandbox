@@ -13,7 +13,8 @@ import { ArrowLeft, Shield, CreditCard, User, MapPin, ExternalLink, UserCheck, C
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
-const customerSchema = z.object({
+// Schema for new customers (requires all fields)
+const newCustomerSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email("Valid email is required"),
@@ -23,6 +24,11 @@ const customerSchema = z.object({
   state: z.string().min(1, "State is required").max(20),
   zipCode: z.string().min(1, "ZIP code is required").max(10),
   country: z.string().default("US"),
+  amount: z.number().min(0.01, "Amount must be at least $0.01").max(99999.99),
+});
+
+// Schema for returning customers (only need amount, email is separate field)
+const returningCustomerSchema = z.object({
   amount: z.number().min(0.01, "Amount must be at least $0.01").max(99999.99),
 });
 
@@ -92,10 +98,22 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
   const validateForm = (): boolean => {
     try {
-      customerSchema.parse({
-        ...customerInfo,
-        amount: parseFloat(customerInfo.amount),
-      });
+      if (isReturningCustomer) {
+        // For returning customers, only validate amount and email lookup
+        if (!existingCustomerEmail || !existingCustomerEmail.includes('@')) {
+          setValidationErrors({ existingEmail: "Valid email is required to look up profile" });
+          return false;
+        }
+        returningCustomerSchema.parse({
+          amount: parseFloat(customerInfo.amount),
+        });
+      } else {
+        // For new customers, validate all fields
+        newCustomerSchema.parse({
+          ...customerInfo,
+          amount: parseFloat(customerInfo.amount),
+        });
+      }
       setValidationErrors({});
       return true;
     } catch (error) {
@@ -130,7 +148,16 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
     try {
       console.log("🔵 Step 1: Submitting hosted payment request...");
 
-      const requestPayload = {
+      // For returning customers, only send amount (profile has the rest)
+      // For new customers, send all customer info
+      const requestPayload = isReturningCustomer ? {
+        existingCustomerEmail: existingCustomerEmail,
+        amount: parseFloat(customerInfo.amount),
+        createProfile: true, // Always add new payment to profile for returning customers
+        returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
+        cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
+        debug: debugMode,
+      } : {
         customerInfo: {
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
@@ -143,7 +170,6 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
           country: customerInfo.country,
           amount: parseFloat(customerInfo.amount),
         },
-        existingCustomerEmail: isReturningCustomer ? existingCustomerEmail : undefined,
         createProfile: createProfile,
         returnUrl: "https://accept-jsui-test-sandbox.lovable.app/",
         cancelUrl: "https://accept-jsui-test-sandbox.lovable.app/",
@@ -548,118 +574,147 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
               <Separator />
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      value={customerInfo.firstName}
-                      onChange={(e) => handleCustomerInfoChange("firstName", e.target.value)}
-                      className={validationErrors.firstName ? "border-destructive" : ""}
-                    />
-                    {validationErrors.firstName && (
-                      <p className="text-xs text-destructive">{validationErrors.firstName}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      value={customerInfo.lastName}
-                      onChange={(e) => handleCustomerInfoChange("lastName", e.target.value)}
-                      className={validationErrors.lastName ? "border-destructive" : ""}
-                    />
-                    {validationErrors.lastName && (
-                      <p className="text-xs text-destructive">{validationErrors.lastName}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={customerInfo.email}
-                    onChange={(e) => handleCustomerInfoChange("email", e.target.value)}
-                    className={validationErrors.email ? "border-destructive" : ""}
-                  />
-                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={customerInfo.phone}
-                      onChange={(e) => handleCustomerInfoChange("phone", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Amount ($) *</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      value={customerInfo.amount}
-                      onChange={(e) => handleCustomerInfoChange("amount", e.target.value)}
-                      className={validationErrors.amount ? "border-destructive" : ""}
-                    />
-                    {validationErrors.amount && <p className="text-xs text-destructive">{validationErrors.amount}</p>}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Billing Address
-                  </Label>
-
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Street Address *"
-                      value={customerInfo.address}
-                      onChange={(e) => handleCustomerInfoChange("address", e.target.value)}
-                      className={validationErrors.address ? "border-destructive" : ""}
-                    />
-                    {validationErrors.address && <p className="text-xs text-destructive">{validationErrors.address}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
+                {isReturningCustomer ? (
+                  // Simplified form for returning customers - only show amount
+                  <div className="space-y-4">
+                    <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                      <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <AlertDescription className="text-sm">
+                        <strong>Profile Lookup:</strong> Customer information will be loaded from your saved profile. 
+                        You'll see your saved payment methods on the payment page.
+                      </AlertDescription>
+                    </Alert>
+                    
                     <div className="space-y-2">
+                      <Label htmlFor="amount">Amount ($) *</Label>
                       <Input
-                        placeholder="City *"
-                        value={customerInfo.city}
-                        onChange={(e) => handleCustomerInfoChange("city", e.target.value)}
-                        className={validationErrors.city ? "border-destructive" : ""}
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        value={customerInfo.amount}
+                        onChange={(e) => handleCustomerInfoChange("amount", e.target.value)}
+                        className={validationErrors.amount ? "border-destructive" : ""}
                       />
-                      {validationErrors.city && <p className="text-xs text-destructive">{validationErrors.city}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="State *"
-                        value={customerInfo.state}
-                        onChange={(e) => handleCustomerInfoChange("state", e.target.value)}
-                        className={validationErrors.state ? "border-destructive" : ""}
-                      />
-                      {validationErrors.state && <p className="text-xs text-destructive">{validationErrors.state}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="ZIP *"
-                        value={customerInfo.zipCode}
-                        onChange={(e) => handleCustomerInfoChange("zipCode", e.target.value)}
-                        className={validationErrors.zipCode ? "border-destructive" : ""}
-                      />
-                      {validationErrors.zipCode && (
-                        <p className="text-xs text-destructive">{validationErrors.zipCode}</p>
-                      )}
+                      {validationErrors.amount && <p className="text-xs text-destructive">{validationErrors.amount}</p>}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // Full form for new customers
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name *</Label>
+                        <Input
+                          id="firstName"
+                          value={customerInfo.firstName}
+                          onChange={(e) => handleCustomerInfoChange("firstName", e.target.value)}
+                          className={validationErrors.firstName ? "border-destructive" : ""}
+                        />
+                        {validationErrors.firstName && (
+                          <p className="text-xs text-destructive">{validationErrors.firstName}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name *</Label>
+                        <Input
+                          id="lastName"
+                          value={customerInfo.lastName}
+                          onChange={(e) => handleCustomerInfoChange("lastName", e.target.value)}
+                          className={validationErrors.lastName ? "border-destructive" : ""}
+                        />
+                        {validationErrors.lastName && (
+                          <p className="text-xs text-destructive">{validationErrors.lastName}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={customerInfo.email}
+                        onChange={(e) => handleCustomerInfoChange("email", e.target.value)}
+                        className={validationErrors.email ? "border-destructive" : ""}
+                      />
+                      {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={customerInfo.phone}
+                          onChange={(e) => handleCustomerInfoChange("phone", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="amount">Amount ($) *</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          value={customerInfo.amount}
+                          onChange={(e) => handleCustomerInfoChange("amount", e.target.value)}
+                          className={validationErrors.amount ? "border-destructive" : ""}
+                        />
+                        {validationErrors.amount && <p className="text-xs text-destructive">{validationErrors.amount}</p>}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <Label className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Billing Address
+                      </Label>
+
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Street Address *"
+                          value={customerInfo.address}
+                          onChange={(e) => handleCustomerInfoChange("address", e.target.value)}
+                          className={validationErrors.address ? "border-destructive" : ""}
+                        />
+                        {validationErrors.address && <p className="text-xs text-destructive">{validationErrors.address}</p>}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="City *"
+                            value={customerInfo.city}
+                            onChange={(e) => handleCustomerInfoChange("city", e.target.value)}
+                            className={validationErrors.city ? "border-destructive" : ""}
+                          />
+                          {validationErrors.city && <p className="text-xs text-destructive">{validationErrors.city}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="State *"
+                            value={customerInfo.state}
+                            onChange={(e) => handleCustomerInfoChange("state", e.target.value)}
+                            className={validationErrors.state ? "border-destructive" : ""}
+                          />
+                          {validationErrors.state && <p className="text-xs text-destructive">{validationErrors.state}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="ZIP *"
+                            value={customerInfo.zipCode}
+                            onChange={(e) => handleCustomerInfoChange("zipCode", e.target.value)}
+                            className={validationErrors.zipCode ? "border-destructive" : ""}
+                          />
+                          {validationErrors.zipCode && (
+                            <p className="text-xs text-destructive">{validationErrors.zipCode}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </form>
             </CardContent>
           </Card>

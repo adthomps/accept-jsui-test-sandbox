@@ -5,7 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface HostedTokenRequest {
+// Full request with customer info (new customers)
+interface NewCustomerRequest {
   customerInfo: {
     firstName: string;
     lastName: string;
@@ -21,8 +22,24 @@ interface HostedTokenRequest {
   };
   returnUrl?: string;
   cancelUrl?: string;
-  existingCustomerEmail?: string;
   createProfile?: boolean;
+  debug?: boolean;
+}
+
+// Simplified request for returning customers (profile lookup)
+interface ReturningCustomerRequest {
+  existingCustomerEmail: string;
+  amount: number;
+  returnUrl?: string;
+  cancelUrl?: string;
+  createProfile?: boolean;
+  debug?: boolean;
+}
+
+type HostedTokenRequest = NewCustomerRequest | ReturningCustomerRequest;
+
+function isReturningCustomerRequest(req: HostedTokenRequest): req is ReturningCustomerRequest {
+  return 'existingCustomerEmail' in req && !('customerInfo' in req);
 }
 
 serve(async (req) => {
@@ -40,18 +57,28 @@ serve(async (req) => {
 
   try {
     console.log('🔵 Step 1: Received accept-hosted-token request');
-    const requestBody: HostedTokenRequest & { debug?: boolean } = await req.json();
+    const requestBody: HostedTokenRequest = await req.json();
+    const isReturning = isReturningCustomerRequest(requestBody);
+    const debug = Boolean(requestBody.debug);
+    
+    console.log('📦 Request type:', isReturning ? 'RETURNING CUSTOMER' : 'NEW CUSTOMER');
     console.log('📦 Request payload:', JSON.stringify({
       ...requestBody,
-      customerInfo: {
-        ...requestBody.customerInfo,
-        email: requestBody.customerInfo.email ? '[REDACTED]' : undefined
-      }
+      ...(isReturning ? { existingCustomerEmail: '[REDACTED]' } : {
+        customerInfo: {
+          ...(requestBody as NewCustomerRequest).customerInfo,
+          email: '[REDACTED]'
+        }
+      })
     }, null, 2));
-    const debug = Boolean(requestBody.debug);
 
-    const { customerInfo, returnUrl, cancelUrl, existingCustomerEmail, createProfile } = requestBody;
-
+    const { returnUrl, cancelUrl, createProfile } = requestBody;
+    
+    // Extract amount based on request type
+    const amount = isReturning 
+      ? (requestBody as ReturningCustomerRequest).amount 
+      : (requestBody as NewCustomerRequest).customerInfo.amount;
+    
     // Generate unique reference ID for this transaction (max 20 chars for Authorize.Net)
     const referenceId = `${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 8)}`;
     console.log('🎫 Generated reference ID:', referenceId);
@@ -64,71 +91,115 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    // Store customer data in pending_payments
-    if (supabaseUrl && supabaseServiceKey) {
-      try {
-        console.log('🔵 Step 2: Storing customer data in pending_payments');
-        const storeResponse = await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': supabaseServiceKey,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            reference_id: referenceId,
-            customer_info: {
-              ...customerInfo,
-              // Store the existing customer profile ID for webhook processing
-              existingCustomerProfileId: null // Will be set below if found
-            },
-            amount: customerInfo.amount,
-            create_profile: createProfile || false
-          })
-        });
-        
-        if (storeResponse.ok) {
-          console.log('✅ Customer data stored in pending_payments');
-        } else {
-          console.warn('⚠️ Error storing pending payment:', storeResponse.status, await storeResponse.text());
-          // Continue anyway - not critical for payment flow
-        }
-      } catch (error) {
-        console.warn('⚠️ Error storing pending payment:', error);
-        // Continue anyway
-      }
-    }
-    
     let customerProfileId: string | null = null;
+    let customerProfileData: any = null;
     
-    // Look up existing customer profile if email provided
-    if (existingCustomerEmail && supabaseUrl && supabaseServiceKey) {
-      try {
-        console.log('🔵 Step 3: Looking up existing customer profile for:', existingCustomerEmail);
-        const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=authorize_net_customer_profile_id`, {
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': supabaseServiceKey,
-            'Content-Type': 'application/json'
+    // For returning customers, look up the profile first to get customer info
+    if (isReturning) {
+      const existingCustomerEmail = (requestBody as ReturningCustomerRequest).existingCustomerEmail;
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          console.log('🔵 Step 2: Looking up existing customer profile for:', existingCustomerEmail);
+          const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/customer_profiles?email=eq.${encodeURIComponent(existingCustomerEmail)}&select=*`, {
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (supabaseResponse.ok) {
+            const profiles = await supabaseResponse.json();
+            if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
+              customerProfileId = profiles[0].authorize_net_customer_profile_id;
+              customerProfileData = profiles[0];
+              console.log(`✅ Found existing customer profile: ${customerProfileId}`);
+            } else {
+              console.log('⚠️ No existing customer profile found');
+              return new Response(JSON.stringify({
+                success: false,
+                error: 'No customer profile found for this email. Please register as a new customer.',
+                details: { email: existingCustomerEmail }
+              }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
           }
-        });
-        
-        if (supabaseResponse.ok) {
-          const profiles = await supabaseResponse.json();
-          if (profiles && profiles.length > 0 && profiles[0].authorize_net_customer_profile_id) {
-            customerProfileId = profiles[0].authorize_net_customer_profile_id;
-            console.log(`✅ Found existing customer profile: ${customerProfileId}`);
-            // TODO: Validate profile exists in Authorize.Net CIM
-          } else {
-            console.log('⚠️ No existing customer profile found');
-          }
-        } else {
-          console.warn('⚠️ Supabase profile lookup failed:', supabaseResponse.status, await supabaseResponse.text());
+        } catch (error) {
+          console.warn('⚠️ Error looking up customer profile:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Failed to look up customer profile',
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
-      } catch (error) {
-        console.warn('⚠️ Error looking up customer profile:', error);
-        // Continue without profile ID
+      }
+      
+      // Store pending payment for returning customer
+      if (supabaseUrl && supabaseServiceKey && customerProfileData) {
+        try {
+          console.log('🔵 Step 3: Storing pending payment for returning customer');
+          await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              reference_id: referenceId,
+              customer_info: {
+                email: customerProfileData.email,
+                firstName: customerProfileData.first_name,
+                lastName: customerProfileData.last_name,
+                existingCustomerProfileId: customerProfileId
+              },
+              amount: amount,
+              create_profile: true // Always add new payment methods for returning customers
+            })
+          });
+          console.log('✅ Pending payment stored');
+        } catch (error) {
+          console.warn('⚠️ Error storing pending payment:', error);
+        }
+      }
+    } else {
+      // New customer flow
+      const customerInfo = (requestBody as NewCustomerRequest).customerInfo;
+      
+      // Store customer data in pending_payments
+      if (supabaseUrl && supabaseServiceKey) {
+        try {
+          console.log('🔵 Step 2: Storing customer data in pending_payments');
+          const storeResponse = await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+              'apikey': supabaseServiceKey,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              reference_id: referenceId,
+              customer_info: customerInfo,
+              amount: customerInfo.amount,
+              create_profile: createProfile || false
+            })
+          });
+          
+          if (storeResponse.ok) {
+            console.log('✅ Customer data stored in pending_payments');
+          } else {
+            console.warn('⚠️ Error storing pending payment:', storeResponse.status, await storeResponse.text());
+          }
+        } catch (error) {
+          console.warn('⚠️ Error storing pending payment:', error);
+        }
       }
     }
 
@@ -139,14 +210,12 @@ serve(async (req) => {
       throw new Error('Authorize.Net credentials not configured');
     }
 
-    // Use simple return URLs (Authorize.Net will append transaction data)
-    
     // Build transactionRequest with correct element ordering per Authorize.Net XML schema:
     // transactionType, amount, profile (if exists), customer, billTo
     // The profile element MUST come before customer and billTo!
     const transactionRequest: any = {
       transactionType: "authCaptureTransaction",
-      amount: customerInfo.amount.toString(),
+      amount: amount.toString(),
     };
     
     // Add profile BEFORE customer/billTo if we have an existing customerProfileId
@@ -156,22 +225,25 @@ serve(async (req) => {
         customerProfileId: customerProfileId
       };
       console.log('✅ Adding existing customer profile to transactionRequest:', customerProfileId);
+      // For returning customers with a profile, we DON'T need customer/billTo
+      // The hosted form will pull info from the profile
+    } else {
+      // For new customers, add customer and billTo info
+      const customerInfo = (requestBody as NewCustomerRequest).customerInfo;
+      transactionRequest.customer = {
+        email: customerInfo.email,
+      };
+      transactionRequest.billTo = {
+        firstName: customerInfo.firstName,
+        lastName: customerInfo.lastName,
+        company: customerInfo.company || '',
+        address: customerInfo.address,
+        city: customerInfo.city,
+        state: customerInfo.state,
+        zip: customerInfo.zipCode,
+        country: customerInfo.country === 'US' ? 'USA' : customerInfo.country,
+      };
     }
-    
-    // Add customer and billTo AFTER profile
-    transactionRequest.customer = {
-      email: customerInfo.email,
-    };
-    transactionRequest.billTo = {
-      firstName: customerInfo.firstName,
-      lastName: customerInfo.lastName,
-      company: customerInfo.company || '',
-      address: customerInfo.address,
-      city: customerInfo.city,
-      state: customerInfo.state,
-      zip: customerInfo.zipCode,
-      country: customerInfo.country === 'US' ? 'USA' : customerInfo.country,
-    };
     
     // Create hosted payment page token request
     const tokenRequest: any = {
@@ -258,30 +330,8 @@ serve(async (req) => {
       },
     };
 
-    // Store customerProfileId in pending_payments for webhook processing
-    if (customerProfileId && supabaseUrl && supabaseServiceKey) {
-      try {
-        // Update the pending_payments record with the existing customer profile ID
-        await fetch(`${supabaseUrl}/rest/v1/pending_payments?reference_id=eq.${referenceId}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': supabaseServiceKey,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify({
-            customer_info: {
-              ...customerInfo,
-              existingCustomerProfileId: customerProfileId
-            }
-          })
-        });
-        console.log('✅ Updated pending_payments with existing customerProfileId:', customerProfileId);
-      } catch (error) {
-        console.warn('⚠️ Error updating pending_payments with profile ID:', error);
-      }
-    }
+    // Note: For returning customers, the customerProfileId is already stored in pending_payments
+    // during the profile lookup phase above. No need to update it again here.
 
     console.log('🔵 Step 4: Sending request to Authorize.Net API');
     
