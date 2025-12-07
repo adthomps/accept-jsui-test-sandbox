@@ -197,7 +197,34 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
 
       if (error) {
         console.error("Supabase function invocation error:", error);
-        throw new Error(`API Error: ${error.message}`);
+        
+        // Try to extract the actual error message from FunctionsHttpError
+        let errorMessage = error.message;
+        let errorTitle = "Payment Initialization Error";
+        
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errorBody = await error.context.json();
+            console.log("Parsed error body:", errorBody);
+            setDebugInfo((prev) => ({ ...prev, errorBody }));
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+              if (errorBody.error.includes("No customer profile found")) {
+                errorTitle = "Customer Not Found";
+              }
+            }
+          }
+        } catch (jsonError) {
+          console.error("Failed to parse error response:", jsonError);
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
       }
 
       if (!data) {
