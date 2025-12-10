@@ -344,6 +344,45 @@ const PaymentMethodSelector = () => {
                     </ul>
                   </div>
                 </div>
+
+                {/* Integration Architecture */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Integration Architecture</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+{`// 1. Load Accept.js library
+<script src="https://js.authorize.net/v1/Accept.js" />
+
+// 2. Collect card data in your custom form
+const cardData = {
+  cardNumber: "4111111111111111",
+  month: "12",
+  year: "2025",
+  cardCode: "123"
+};
+
+// 3. Build secure data object
+const secureData = {
+  authData: {
+    clientKey: "YOUR_PUBLIC_CLIENT_KEY",
+    apiLoginID: "YOUR_API_LOGIN_ID"
+  },
+  cardData: cardData
+};
+
+// 4. Dispatch to Authorize.Net for tokenization
+Accept.dispatchData(secureData, responseHandler);
+
+// 5. Handle response with payment nonce
+function responseHandler(response) {
+  if (response.messages.resultCode === "Ok") {
+    const nonce = response.opaqueData.dataValue;
+    // Send nonce to your server for processing
+  }
+}`}
+                    </pre>
+                  </div>
+                </div>
                 
                 <Button
                   onClick={() => setSelectedMethod('acceptjs')}
@@ -420,6 +459,39 @@ const PaymentMethodSelector = () => {
                       <li>Low development resources</li>
                       <li>Hosted UI acceptable</li>
                     </ul>
+                  </div>
+                </div>
+
+                {/* Integration Architecture */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Integration Architecture</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+{`// 1. Load AcceptUI.js library
+<script src="https://js.authorize.net/v1/AcceptUI.js" />
+
+// 2. Add payment button with data attributes
+<button
+  class="AcceptUI"
+  data-billingAddressOptions='{"show":true,"required":false}'
+  data-apiLoginID="YOUR_API_LOGIN_ID"
+  data-clientKey="YOUR_PUBLIC_CLIENT_KEY"
+  data-acceptUIFormBtnTxt="Submit"
+  data-acceptUIFormHeaderTxt="Card Information"
+  data-responseHandler="responseHandler"
+>
+  Pay Now
+</button>
+
+// 3. Handle response with payment nonce
+function responseHandler(response) {
+  if (response.messages.resultCode === "Ok") {
+    const nonce = response.opaqueData.dataValue;
+    const descriptor = response.opaqueData.dataDescriptor;
+    // Send to your server for processing
+  }
+}`}
+                    </pre>
                   </div>
                 </div>
                 
@@ -558,6 +630,42 @@ const PaymentMethodSelector = () => {
                     </ul>
                   </div>
                 </div>
+
+                {/* Integration Architecture */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Integration Architecture</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+{`// 1. Server-side: Get hosted payment page token
+const response = await fetch('/api/accept-hosted-token', {
+  method: 'POST',
+  body: JSON.stringify({
+    amount: 19.99,
+    customerInfo: { email, firstName, lastName, ... },
+    createProfile: true  // Optional: save for future use
+  })
+});
+const { token } = await response.json();
+
+// 2. Display Method Options:
+
+// A) Full Page Redirect
+const form = document.createElement('form');
+form.action = 'https://test.authorize.net/payment/payment';
+form.method = 'POST';
+// Add token input and submit
+
+// B) Lightbox Popup
+AuthorizeNetPopup.openPopup(token);
+
+// C) Embedded iFrame
+<iframe src="https://test.authorize.net/payment/payment"
+        name="acceptPaymentFrame" />
+
+// 3. Handle return via webhook or redirect URL`}
+                    </pre>
+                  </div>
+                </div>
                 
                 <Button
                   onClick={() => setSelectedMethod('accepthosted')}
@@ -634,6 +742,39 @@ const PaymentMethodSelector = () => {
                       <li>Multi-card customer accounts</li>
                       <li>Recurring payment systems</li>
                     </ul>
+                  </div>
+                </div>
+
+                {/* Integration Architecture */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Integration Architecture</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+{`// 1. Create Customer Profile (Direct API)
+POST /api/create-customer-profile
+{ email, firstName, lastName, address, ... }
+→ Returns: customerProfileId
+
+// 2. Add Payment Methods (Hosted Form)
+POST /api/get-hosted-profile-token
+{ customerProfileId, pageType: "addPayment" }
+→ Returns: token for hosted profile page
+
+// 3. Display Method Options:
+// A) Full Page Redirect
+// B) Lightbox Popup (iFrameCommunicator)
+// C) Embedded iFrame (iFrameCommunicator)
+
+// 4. Get Profile Details (Direct API)
+POST /api/get-customer-profile
+{ customerProfileId }
+→ Returns: paymentProfiles[], shippingAddresses[]
+
+// 5. Charge Stored Profile (Direct API)
+POST /api/charge-customer-profile
+{ customerProfileId, paymentProfileId, amount }
+→ Returns: transactionId, authCode`}
+                    </pre>
                   </div>
                 </div>
                 
