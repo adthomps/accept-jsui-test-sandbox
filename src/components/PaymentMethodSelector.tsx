@@ -348,40 +348,47 @@ const PaymentMethodSelector = () => {
                 {/* Integration Architecture */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Integration Architecture</h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-{`// 1. Load Accept.js library
-<script src="https://js.authorize.net/v1/Accept.js" />
-
-// 2. Collect card data in your custom form
-const cardData = {
-  cardNumber: "4111111111111111",
-  month: "12",
-  year: "2025",
-  cardCode: "123"
-};
-
-// 3. Build secure data object
-const secureData = {
-  authData: {
-    clientKey: "YOUR_PUBLIC_CLIENT_KEY",
-    apiLoginID: "YOUR_API_LOGIN_ID"
-  },
-  cardData: cardData
-};
-
-// 4. Dispatch to Authorize.Net for tokenization
-Accept.dispatchData(secureData, responseHandler);
-
-// 5. Handle response with payment nonce
-function responseHandler(response) {
-  if (response.messages.resultCode === "Ok") {
-    const nonce = response.opaqueData.dataValue;
-    // Send nonce to your server for processing
-  }
-}`}
-                    </pre>
-                  </div>
+                  <Card className="bg-muted/30 border-amber-500/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                          <ShieldAlert className="h-3 w-3" />
+                          SAQ A-EP
+                        </Badge>
+                      </div>
+                      <CardDescription className="mt-2">
+                        <strong>Higher PCI Scope:</strong> Card data enters your page before tokenization. You must complete SAQ A-EP self-assessment questionnaire.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Accept.js Client-Side</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Payment data is tokenized directly in the browser using Authorize.Net's Accept.js library. Card details never touch your server - only the secure payment nonce is transmitted.
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 text-center">
+                        <code className="text-xs text-primary">
+                          Browser → Accept.js → Payment Token → Your Server → Authorize.Net
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          Server Processing
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Edge Function receives only the payment nonce and processes the transaction via Authorize.Net API.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium">Supports:</span>
+                        <Badge variant="secondary" className="text-xs">Credit Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">Debit Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">eCheck/ACH</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 <Button
@@ -465,34 +472,47 @@ function responseHandler(response) {
                 {/* Integration Architecture */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Integration Architecture</h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-{`// 1. Load AcceptUI.js library
-<script src="https://js.authorize.net/v1/AcceptUI.js" />
-
-// 2. Add payment button with data attributes
-<button
-  class="AcceptUI"
-  data-billingAddressOptions='{"show":true,"required":false}'
-  data-apiLoginID="YOUR_API_LOGIN_ID"
-  data-clientKey="YOUR_PUBLIC_CLIENT_KEY"
-  data-acceptUIFormBtnTxt="Submit"
-  data-acceptUIFormHeaderTxt="Card Information"
-  data-responseHandler="responseHandler"
->
-  Pay Now
-</button>
-
-// 3. Handle response with payment nonce
-function responseHandler(response) {
-  if (response.messages.resultCode === "Ok") {
-    const nonce = response.opaqueData.dataValue;
-    const descriptor = response.opaqueData.dataDescriptor;
-    // Send to your server for processing
-  }
-}`}
-                    </pre>
-                  </div>
+                  <Card className="bg-muted/30 border-emerald-500/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                          <ShieldCheck className="h-3 w-3" />
+                          SAQ-A
+                        </Badge>
+                      </div>
+                      <CardDescription className="mt-2">
+                        <strong>Lowest PCI Scope:</strong> Card data never touches your page. Authorize.Net's hosted lightbox handles all sensitive data collection.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">AcceptUI Hosted Lightbox</h4>
+                        <p className="text-sm text-muted-foreground">
+                          A secure modal overlay appears when the payment button is clicked. All card data is collected directly by Authorize.Net's iframe - your page never sees the sensitive information.
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 text-center">
+                        <code className="text-xs text-primary">
+                          Button Click → Hosted Lightbox → Payment Token → Your Server → Authorize.Net
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          Server Processing
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Edge Function receives only the payment nonce via callback and processes the transaction via Authorize.Net API.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        <span className="font-medium">Supports:</span>
+                        <Badge variant="secondary" className="text-xs">Credit Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">Debit Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">eCheck/ACH</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 <Button
@@ -634,37 +654,47 @@ function responseHandler(response) {
                 {/* Integration Architecture */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Integration Architecture</h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-{`// 1. Server-side: Get hosted payment page token
-const response = await fetch('/api/accept-hosted-token', {
-  method: 'POST',
-  body: JSON.stringify({
-    amount: 19.99,
-    customerInfo: { email, firstName, lastName, ... },
-    createProfile: true  // Optional: save for future use
-  })
-});
-const { token } = await response.json();
-
-// 2. Display Method Options:
-
-// A) Full Page Redirect
-const form = document.createElement('form');
-form.action = 'https://test.authorize.net/payment/payment';
-form.method = 'POST';
-// Add token input and submit
-
-// B) Lightbox Popup
-AuthorizeNetPopup.openPopup(token);
-
-// C) Embedded iFrame
-<iframe src="https://test.authorize.net/payment/payment"
-        name="acceptPaymentFrame" />
-
-// 3. Handle return via webhook or redirect URL`}
-                    </pre>
-                  </div>
+                  <Card className="bg-muted/30 border-emerald-500/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                          <ShieldCheck className="h-3 w-3" />
+                          SAQ-A
+                        </Badge>
+                      </div>
+                      <CardDescription className="mt-2">
+                        <strong>Lowest PCI Scope:</strong> All payment data collection happens on Authorize.Net's fully hosted pages. Your site never handles card data.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Accept Hosted Payment Page</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Your server requests a hosted payment page token from Authorize.Net. The customer completes payment on Authorize.Net's secure hosted page via redirect, lightbox, or embedded iframe.
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 text-center">
+                        <code className="text-xs text-primary">
+                          Your Server → Get Token → Display Hosted Page → Customer Pays → Webhook/Return
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          Server Processing
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Edge Function generates the hosted payment token and optionally creates customer profiles. Webhooks confirm transaction completion.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        <span className="font-medium">Supports:</span>
+                        <Badge variant="secondary" className="text-xs">Credit Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">Customer Profiles</Badge>
+                        <Badge variant="secondary" className="text-xs">Recurring</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 <Button
@@ -748,34 +778,48 @@ AuthorizeNetPopup.openPopup(token);
                 {/* Integration Architecture */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Integration Architecture</h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-{`// 1. Create Customer Profile (Direct API)
-POST /api/create-customer-profile
-{ email, firstName, lastName, address, ... }
-→ Returns: customerProfileId
-
-// 2. Add Payment Methods (Hosted Form)
-POST /api/get-hosted-profile-token
-{ customerProfileId, pageType: "addPayment" }
-→ Returns: token for hosted profile page
-
-// 3. Display Method Options:
-// A) Full Page Redirect
-// B) Lightbox Popup (iFrameCommunicator)
-// C) Embedded iFrame (iFrameCommunicator)
-
-// 4. Get Profile Details (Direct API)
-POST /api/get-customer-profile
-{ customerProfileId }
-→ Returns: paymentProfiles[], shippingAddresses[]
-
-// 5. Charge Stored Profile (Direct API)
-POST /api/charge-customer-profile
-{ customerProfileId, paymentProfileId, amount }
-→ Returns: transactionId, authCode`}
-                    </pre>
-                  </div>
+                  <Card className="bg-muted/30 border-emerald-500/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                          <ShieldCheck className="h-3 w-3" />
+                          SAQ-A
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">Hybrid Integration</Badge>
+                      </div>
+                      <CardDescription className="mt-2">
+                        <strong>Lowest PCI Scope:</strong> Uses hosted forms for card collection and Direct API for profile management. Card data never touches your servers.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Customer Information Manager (CIM)</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Create and manage customer profiles with stored payment methods. Use hosted forms (SAQ-A) for adding payment methods, and Direct API calls for charging stored profiles.
+                        </p>
+                      </div>
+                      <div className="bg-background/50 rounded-lg p-3 text-center">
+                        <code className="text-xs text-primary">
+                          Create Profile (API) → Add Payment (Hosted) → Charge Profile (API)
+                        </code>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Code className="h-4 w-4" />
+                          Server Processing
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Edge Functions handle profile creation, hosted form token generation, profile retrieval, and charging stored payment methods.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        <span className="font-medium">Supports:</span>
+                        <Badge variant="secondary" className="text-xs">Stored Cards</Badge>
+                        <Badge variant="secondary" className="text-xs">Subscriptions</Badge>
+                        <Badge variant="secondary" className="text-xs">Recurring</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
                 
                 <Button
