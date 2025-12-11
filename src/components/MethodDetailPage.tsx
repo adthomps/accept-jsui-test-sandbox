@@ -725,62 +725,65 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               </CardContent>
             </Card>
 
-            {/* Content Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Integration Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Integration Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ol className="space-y-2 text-sm text-muted-foreground">
-                    {data.integrationDetails.map((step, index) => (
-                      <li key={index} className="text-primary">
-                        {index + 1}. <span className="text-muted-foreground">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </CardContent>
-              </Card>
-
-              {/* Integration Architecture */}
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Integration Architecture</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Flow Diagram */}
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <code className="text-sm text-primary font-medium">
-                      {data.integrationArchitecture.flow}
-                    </code>
+            {/* Integration Architecture (Combined) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Integration Architecture</CardTitle>
+                <CardDescription>{data.integrationArchitecture.dataFlow}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Flow Diagram */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <code className="text-sm text-primary font-medium">
+                    {data.integrationArchitecture.flow}
+                  </code>
+                </div>
+                
+                {/* Components & Steps Grid */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Architecture Components */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-foreground">Components</h4>
+                    <div className="grid gap-2">
+                      {data.integrationArchitecture.components.map((component, index) => (
+                        <div key={index} className="bg-background border rounded-lg p-3 space-y-1">
+                          <div className="font-medium text-sm text-primary">{component.name}</div>
+                          <div className="text-xs text-muted-foreground">{component.description}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   
-                  {/* Components Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {data.integrationArchitecture.components.map((component, index) => (
-                      <div key={index} className="bg-background border rounded-lg p-3 space-y-1">
-                        <div className="font-medium text-sm text-primary">{component.name}</div>
-                        <div className="text-xs text-muted-foreground">{component.description}</div>
-                      </div>
-                    ))}
+                  {/* Implementation Steps */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-foreground">Implementation Steps</h4>
+                    <ol className="space-y-2 text-sm text-muted-foreground">
+                      {data.integrationDetails.map((step, index) => (
+                        <li key={index} className="flex gap-2">
+                          <span className="text-primary font-medium shrink-0">{index + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
-                  
-                  {/* Data Flow Description */}
-                  <div className="text-sm text-muted-foreground border-l-2 border-primary/30 pl-3">
-                    {data.integrationArchitecture.dataFlow}
-                  </div>
-                  
-                  {/* Supported Payment Types */}
-                  <div className="flex gap-2 flex-wrap pt-2">
+                </div>
+                
+                {/* Supported Payment Types */}
+                <div className="flex items-center gap-3 pt-2 border-t">
+                  <span className="text-sm font-medium text-muted-foreground">Supports:</span>
+                  <div className="flex gap-2 flex-wrap">
                     {data.integrationArchitecture.supports.map(item => (
                       <Badge key={item} variant="outline" className={`text-xs ${isSaqA ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-amber-500/10 text-amber-600 border-amber-500/30'}`}>
                         {item}
                       </Badge>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Content Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
 
               {/* Available Options */}
               <Card>
