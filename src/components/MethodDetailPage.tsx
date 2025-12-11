@@ -19,6 +19,7 @@ interface ApiExample {
   title: string;
   description: string;
   code: string;
+  language: 'html' | 'javascript' | 'json';
 }
 
 const apiExamples: Record<string, { flow: string; examples: ApiExample[] }> = {
@@ -26,16 +27,18 @@ const apiExamples: Record<string, { flow: string; examples: ApiExample[] }> = {
     flow: 'Load Accept.js → Collect Card Data → Tokenize (Browser) → Send Token → Process Payment (API)',
     examples: [
       {
-        title: '1. Load Accept.js Library',
+        title: 'Load Accept.js Library',
         description: 'Include the Accept.js script in your HTML page.',
+        language: 'html',
         code: `<script type="text/javascript" 
   src="https://jstest.authorize.net/v1/Accept.js" 
   charset="utf-8">
 </script>`
       },
       {
-        title: '2. Dispatch Payment Data',
+        title: 'Dispatch Payment Data',
         description: 'Collect card data and request a payment nonce from Authorize.Net.',
+        language: 'javascript',
         code: `const secureData = {
   authData: {
     clientKey: "YOUR_PUBLIC_CLIENT_KEY",
@@ -62,8 +65,9 @@ function responseHandler(response) {
 }`
       },
       {
-        title: '3. Process Payment (Server-Side)',
+        title: 'Process Payment (Server-Side)',
         description: 'Use the payment nonce to create a transaction via Authorize.Net API.',
+        language: 'json',
         code: `{
   "createTransactionRequest": {
     "merchantAuthentication": {
@@ -89,8 +93,9 @@ function responseHandler(response) {
     flow: 'Add Button → User Clicks → Hosted Lightbox → Token Callback → Process Payment (API)',
     examples: [
       {
-        title: '1. Add AcceptUI Button',
+        title: 'Add AcceptUI Button',
         description: 'Add a payment button with AcceptUI data attributes.',
+        language: 'html',
         code: `<button type="button"
   class="AcceptUI"
   data-billingAddressOptions='{"show":true, "required":false}'
@@ -108,8 +113,9 @@ function responseHandler(response) {
 </script>`
       },
       {
-        title: '2. Handle Response',
+        title: 'Handle Response',
         description: 'Define the callback function to receive the payment nonce.',
+        language: 'javascript',
         code: `function responseHandler(response) {
   if (response.messages.resultCode === "Error") {
     let errors = response.messages.message;
@@ -127,8 +133,9 @@ function responseHandler(response) {
 }`
       },
       {
-        title: '3. Process Payment (Server-Side)',
+        title: 'Process Payment (Server-Side)',
         description: 'Use the payment nonce to create a transaction.',
+        language: 'json',
         code: `{
   "createTransactionRequest": {
     "merchantAuthentication": {
@@ -154,8 +161,9 @@ function responseHandler(response) {
     flow: 'Get Token (API) → Redirect/iFrame/Lightbox → Customer Pays → Webhook/Return URL',
     examples: [
       {
-        title: '1. Get Hosted Payment Page Token',
+        title: 'Get Hosted Payment Page Token',
         description: 'Request a hosted payment page token from Authorize.Net.',
+        language: 'json',
         code: `{
   "getHostedPaymentPageRequest": {
     "merchantAuthentication": {
@@ -185,8 +193,9 @@ function responseHandler(response) {
 }`
       },
       {
-        title: '2. Display Hosted Page (Redirect)',
+        title: 'Display Hosted Page (Redirect)',
         description: 'Redirect the customer to the hosted payment page.',
+        language: 'javascript',
         code: `// Redirect to hosted payment page
 const hostedPageUrl = "https://test.authorize.net/payment/payment";
 
@@ -205,9 +214,10 @@ document.body.appendChild(form);
 form.submit();`
       },
       {
-        title: '3. Display Hosted Page (iFrame/Lightbox)',
+        title: 'Display Hosted Page (iFrame/Lightbox)',
         description: 'Embed the hosted page in an iFrame or lightbox.',
-        code: `// iFrame Communicator (save as iFrameCommunicator.html)
+        language: 'html',
+        code: `<!-- iFrame Communicator (save as iFrameCommunicator.html) -->
 <html>
 <head>
 <script>
@@ -235,10 +245,10 @@ window.addEventListener("message", receiveMessage, false);
 </html>`
       },
       {
-        title: '4. Handle Webhook Notification',
+        title: 'Handle Webhook Notification',
         description: 'Process webhook events for transaction confirmation.',
-        code: `// Webhook payload example
-{
+        language: 'json',
+        code: `{
   "notificationId": "abc123-def456",
   "eventType": "net.authorize.payment.authcapture.created",
   "eventDate": "2024-01-15T10:30:00Z",
@@ -259,8 +269,9 @@ window.addEventListener("message", receiveMessage, false);
     flow: 'Create Customer Profile (API) → Generate Hosted Token → Display Hosted Form → Store Tokenized Payment Profile → Charge Profile (API)',
     examples: [
       {
-        title: '1. Create Customer Profile',
+        title: 'Create Customer Profile',
         description: 'Create a customer profile in CIM and store the returned customerProfileId in your database.',
+        language: 'json',
         code: `{
   "createCustomerProfileRequest": {
     "merchantAuthentication": {
@@ -277,8 +288,9 @@ window.addEventListener("message", receiveMessage, false);
 }`
       },
       {
-        title: '2. Generate Hosted Form Token',
+        title: 'Generate Hosted Form Token',
         description: 'Use the customerProfileId to request a short-lived token for the Accept Customer hosted form.',
+        language: 'json',
         code: `{
   "getHostedProfilePageRequest": {
     "merchantAuthentication": {
@@ -306,8 +318,9 @@ window.addEventListener("message", receiveMessage, false);
 }`
       },
       {
-        title: '3. Get Customer Profile',
+        title: 'Get Customer Profile',
         description: 'Retrieve the customer profile with all payment and shipping profiles.',
+        language: 'json',
         code: `{
   "getCustomerProfileRequest": {
     "merchantAuthentication": {
@@ -326,8 +339,9 @@ window.addEventListener("message", receiveMessage, false);
 // - Card types and expiration dates`
       },
       {
-        title: '4. Charge Customer Profile',
+        title: 'Charge Customer Profile',
         description: 'Process a payment using stored customer and payment profile IDs.',
+        language: 'json',
         code: `{
   "createTransactionRequest": {
     "merchantAuthentication": {
@@ -877,28 +891,52 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               </CardContent>
             </Card>
 
-            {/* API Examples */}
-            <div className="space-y-6">
+            {/* API Examples with Step Indicators */}
+            <div className="relative">
               {apiData?.examples.map((example, index) => (
-                <Card key={index}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Code className="h-4 w-4 text-primary" />
-                          {example.title}
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                          {example.description}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="outline" className="text-xs">JSON</Badge>
+                <div key={index} className="relative flex gap-4 pb-6 last:pb-0">
+                  {/* Step Number with Connector */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                      {index + 1}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CodeBlock code={example.code} />
-                  </CardContent>
-                </Card>
+                    {index < (apiData?.examples.length ?? 0) - 1 && (
+                      <div className="w-0.5 flex-1 bg-border mt-2" />
+                    )}
+                  </div>
+                  
+                  {/* Card Content */}
+                  <Card className="flex-1">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Code className="h-4 w-4 text-primary" />
+                            {example.title}
+                          </CardTitle>
+                          <CardDescription className="mt-1">
+                            {example.description}
+                          </CardDescription>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs shrink-0 ${
+                            example.language === 'javascript' 
+                              ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' 
+                              : example.language === 'html' 
+                                ? 'bg-orange-500/10 text-orange-600 border-orange-500/30' 
+                                : 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                          }`}
+                        >
+                          {example.language.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CodeBlock code={example.code} />
+                    </CardContent>
+                  </Card>
+                </div>
               ))}
             </div>
           </>
