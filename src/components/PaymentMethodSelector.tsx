@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, CheckCircle, ShieldCheck, ShieldAlert, Play, BookOpen } from 'lucide-react';
+import { Shield, CheckCircle, ShieldCheck, ShieldAlert, Play, BookOpen, Code, Sparkles, ExternalLink } from 'lucide-react';
 import PaymentForm from '@/components/PaymentForm';
 import AcceptUIForm from '@/components/AcceptUIForm';
 import AcceptHostedForm from '@/components/AcceptHostedForm';
@@ -54,20 +54,66 @@ const PaymentMethodSelector = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Authorize.Net Payment Testing
-            </h1>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="h-8 w-8 text-primary" />
+              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Authorize.Net Payment Testing
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://developer.authorize.net/api/reference/index.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                Overview
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <a 
+                href="https://developer.authorize.net/api/reference/index.html#accept-suite" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Code className="h-4 w-4" />
+                API Examples
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <a 
+                href="https://developer.authorize.net/hello_world.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Sparkles className="h-4 w-4" />
+                AI Starter
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <a 
+                href="https://developer.authorize.net/hello_world/testing_guide.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Play className="h-4 w-4" />
+                Demo
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Test different Authorize.Net integration methods for secure payment processing
-          </p>
-          <Badge variant="secondary" className="gap-2">
-            <Shield className="h-4 w-4" />
-            Sandbox Environment
-          </Badge>
+          <div className="text-center">
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Test different Authorize.Net integration methods for secure payment processing
+            </p>
+            <Badge variant="secondary" className="gap-2 mt-4">
+              <Shield className="h-4 w-4" />
+              Sandbox Environment
+            </Badge>
+          </div>
         </div>
 
         {/* Comparison Cards */}
