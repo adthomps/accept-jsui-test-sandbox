@@ -41,9 +41,11 @@ interface PaymentToken {
 
 interface PaymentFormProps {
   onBack: () => void;
+  onOverview: () => void;
+  onApi: () => void;
 }
 
-const PaymentForm = ({ onBack }: PaymentFormProps) => {
+const PaymentForm = ({ onBack, onOverview, onApi }: PaymentFormProps) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
@@ -338,31 +340,51 @@ const PaymentForm = ({ onBack }: PaymentFormProps) => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AcceptJS Payment
-            </h1>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2 mb-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                AcceptJS Payment
+              </h1>
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1">
+                <ShieldAlert className="h-3 w-3" />
+                SAQ A-EP
+              </Badge>
+            </div>
             <p className="text-muted-foreground">
               Client-side tokenization with custom payment form
             </p>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Badge variant="secondary" className="gap-2">
-              <Shield className="h-4 w-4" />
-              SAQ A-EP
-            </Badge>
-            <Badge variant="outline" className="gap-2">
-              {paymentType === 'card' ? (
-                <CreditCard className="h-4 w-4" />
-              ) : (
-                <Landmark className="h-4 w-4" />
-              )}
-              {paymentType === 'card' ? 'Card' : 'eCheck'}
-            </Badge>
+
+          {/* Tab Navigation */}
+          <div className="flex bg-muted rounded-lg p-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOverview}
+              className="rounded-md"
+            >
+              Overview
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onApi}
+              className="rounded-md"
+            >
+              API Examples
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-md"
+            >
+              Demo
+            </Button>
           </div>
         </div>
 
