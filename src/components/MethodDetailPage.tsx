@@ -377,6 +377,13 @@ const methodData = {
     ],
     integrationArchitecture: {
       flow: 'Browser → Accept.js → Payment Token → Your Server → Authorize.Net',
+      components: [
+        { name: 'Client (Browser)', description: 'Loads Accept.js library and collects card data' },
+        { name: 'Accept.js Library', description: 'Tokenizes payment data client-side' },
+        { name: 'Your Server', description: 'Receives nonce, processes transaction' },
+        { name: 'Authorize.Net API', description: 'Validates and settles payment' },
+      ],
+      dataFlow: 'Card data enters your page temporarily before tokenization. Only the secure nonce travels to your server.',
       supports: ['Credit Cards', 'Debit Cards', 'eCheck/ACH'],
     },
     availableOptions: [
@@ -431,6 +438,13 @@ const methodData = {
     ],
     integrationArchitecture: {
       flow: 'Button Click → Hosted Lightbox → Payment Token → Your Server → Authorize.Net',
+      components: [
+        { name: 'Payment Button', description: 'Triggers hosted lightbox modal' },
+        { name: 'Hosted Lightbox', description: 'Authorize.Net iframe collects card data' },
+        { name: 'Callback Handler', description: 'Receives tokenized payment nonce' },
+        { name: 'Your Server', description: 'Processes transaction with nonce' },
+      ],
+      dataFlow: 'Card data never touches your page. All sensitive data is collected within the secure hosted iframe.',
       supports: ['Credit Cards', 'Debit Cards', 'eCheck/ACH'],
     },
     availableOptions: [
@@ -482,6 +496,13 @@ const methodData = {
     ],
     integrationArchitecture: {
       flow: 'Your Server → Get Token → Display Hosted Page → Customer Pays → Webhook/Return',
+      components: [
+        { name: 'Your Server (Backend)', description: 'Requests hosted payment token from API' },
+        { name: 'Hosted Payment Page', description: 'Authorize.Net-hosted form (redirect/iframe/lightbox)' },
+        { name: 'iFrameCommunicator', description: 'Handles cross-origin messaging for embedded modes' },
+        { name: 'Webhook Endpoint', description: 'Receives transaction confirmation events' },
+      ],
+      dataFlow: 'All payment data is collected on Authorize.Net hosted pages. Your server only handles tokens and webhooks.',
       supports: ['Credit Cards', 'Customer Profiles', 'Recurring'],
     },
     availableOptions: [
@@ -531,6 +552,13 @@ const methodData = {
     ],
     integrationArchitecture: {
       flow: 'Create Profile (API) → Add Payment (Hosted) → Charge Profile (API)',
+      components: [
+        { name: 'CIM API', description: 'Creates and manages customer profiles' },
+        { name: 'Hosted Profile Form', description: 'Securely collects payment methods (SAQ-A)' },
+        { name: 'Token Vault', description: 'Stores encrypted payment profiles' },
+        { name: 'Transaction API', description: 'Charges stored profiles on demand' },
+      ],
+      dataFlow: 'Hybrid approach: Direct API for profile management, hosted forms for card collection. No card data on your servers.',
       supports: ['Stored Cards', 'Recurring', 'ACH'],
     },
     availableOptions: [
@@ -716,15 +744,35 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               </Card>
 
               {/* Integration Architecture */}
-              <Card>
+              <Card className="md:col-span-2">
                 <CardHeader>
                   <CardTitle className="text-base">Integration Architecture</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <code className="text-sm text-primary block">
-                    {data.integrationArchitecture.flow}
-                  </code>
-                  <div className="flex gap-2 flex-wrap">
+                  {/* Flow Diagram */}
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <code className="text-sm text-primary font-medium">
+                      {data.integrationArchitecture.flow}
+                    </code>
+                  </div>
+                  
+                  {/* Components Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {data.integrationArchitecture.components.map((component, index) => (
+                      <div key={index} className="bg-background border rounded-lg p-3 space-y-1">
+                        <div className="font-medium text-sm text-primary">{component.name}</div>
+                        <div className="text-xs text-muted-foreground">{component.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Data Flow Description */}
+                  <div className="text-sm text-muted-foreground border-l-2 border-primary/30 pl-3">
+                    {data.integrationArchitecture.dataFlow}
+                  </div>
+                  
+                  {/* Supported Payment Types */}
+                  <div className="flex gap-2 flex-wrap pt-2">
                     {data.integrationArchitecture.supports.map(item => (
                       <Badge key={item} variant="outline" className={`text-xs ${isSaqA ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-amber-500/10 text-amber-600 border-amber-500/30'}`}>
                         {item}
