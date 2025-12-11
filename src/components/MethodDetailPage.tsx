@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShieldCheck, ShieldAlert, Users, CreditCard, ArrowRight, Repeat, Ban, Globe, Code, Shield, Copy, Check } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ShieldAlert, Users, CreditCard, ArrowRight, Repeat, Ban, Globe, Code, Shield, Copy, Check, Monitor, Lock, Server, Webhook, MousePointer, LayoutGrid, Vault, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Props for MethodDetailPage component
@@ -378,10 +378,10 @@ const methodData = {
     integrationArchitecture: {
       flow: 'Browser → Accept.js → Payment Token → Your Server → Authorize.Net',
       components: [
-        { name: 'Client (Browser)', description: 'Loads Accept.js library and collects card data' },
-        { name: 'Accept.js Library', description: 'Tokenizes payment data client-side' },
-        { name: 'Your Server', description: 'Receives nonce, processes transaction' },
-        { name: 'Authorize.Net API', description: 'Validates and settles payment' },
+        { name: 'Client (Browser)', icon: Monitor, description: 'Loads Accept.js library and collects card data' },
+        { name: 'Accept.js Library', icon: Code, description: 'Tokenizes payment data client-side' },
+        { name: 'Your Server', icon: Server, description: 'Receives nonce, processes transaction' },
+        { name: 'Authorize.Net API', icon: Lock, description: 'Validates and settles payment' },
       ],
       dataFlow: 'Card data enters your page temporarily before tokenization. Only the secure nonce travels to your server.',
       supports: ['Credit Cards', 'Debit Cards', 'eCheck/ACH'],
@@ -439,10 +439,10 @@ const methodData = {
     integrationArchitecture: {
       flow: 'Button Click → Hosted Lightbox → Payment Token → Your Server → Authorize.Net',
       components: [
-        { name: 'Payment Button', description: 'Triggers hosted lightbox modal' },
-        { name: 'Hosted Lightbox', description: 'Authorize.Net iframe collects card data' },
-        { name: 'Callback Handler', description: 'Receives tokenized payment nonce' },
-        { name: 'Your Server', description: 'Processes transaction with nonce' },
+        { name: 'Payment Button', icon: MousePointer, description: 'Triggers hosted lightbox modal' },
+        { name: 'Hosted Lightbox', icon: LayoutGrid, description: 'Authorize.Net iframe collects card data' },
+        { name: 'Callback Handler', icon: Code, description: 'Receives tokenized payment nonce' },
+        { name: 'Your Server', icon: Server, description: 'Processes transaction with nonce' },
       ],
       dataFlow: 'Card data never touches your page. All sensitive data is collected within the secure hosted iframe.',
       supports: ['Credit Cards', 'Debit Cards', 'eCheck/ACH'],
@@ -497,10 +497,10 @@ const methodData = {
     integrationArchitecture: {
       flow: 'Your Server → Get Token → Display Hosted Page → Customer Pays → Webhook/Return',
       components: [
-        { name: 'Your Server (Backend)', description: 'Requests hosted payment token from API' },
-        { name: 'Hosted Payment Page', description: 'Authorize.Net-hosted form (redirect/iframe/lightbox)' },
-        { name: 'iFrameCommunicator', description: 'Handles cross-origin messaging for embedded modes' },
-        { name: 'Webhook Endpoint', description: 'Receives transaction confirmation events' },
+        { name: 'Your Server (Backend)', icon: Server, description: 'Requests hosted payment token from API' },
+        { name: 'Hosted Payment Page', icon: Shield, description: 'Authorize.Net-hosted form (redirect/iframe/lightbox)' },
+        { name: 'iFrameCommunicator', icon: Globe, description: 'Handles cross-origin messaging for embedded modes' },
+        { name: 'Webhook Endpoint', icon: Webhook, description: 'Receives transaction confirmation events' },
       ],
       dataFlow: 'All payment data is collected on Authorize.Net hosted pages. Your server only handles tokens and webhooks.',
       supports: ['Credit Cards', 'Customer Profiles', 'Recurring'],
@@ -553,10 +553,10 @@ const methodData = {
     integrationArchitecture: {
       flow: 'Create Profile (API) → Add Payment (Hosted) → Charge Profile (API)',
       components: [
-        { name: 'CIM API', description: 'Creates and manages customer profiles' },
-        { name: 'Hosted Profile Form', description: 'Securely collects payment methods (SAQ-A)' },
-        { name: 'Token Vault', description: 'Stores encrypted payment profiles' },
-        { name: 'Transaction API', description: 'Charges stored profiles on demand' },
+        { name: 'CIM API', icon: Database, description: 'Creates and manages customer profiles' },
+        { name: 'Hosted Profile Form', icon: Shield, description: 'Securely collects payment methods (SAQ-A)' },
+        { name: 'Token Vault', icon: Vault, description: 'Stores encrypted payment profiles' },
+        { name: 'Transaction API', icon: CreditCard, description: 'Charges stored profiles on demand' },
       ],
       dataFlow: 'Hybrid approach: Direct API for profile management, hosted forms for card collection. No card data on your servers.',
       supports: ['Stored Cards', 'Recurring', 'ACH'],
@@ -746,9 +746,14 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
                     <h4 className="text-sm font-medium text-foreground">Components</h4>
                     <div className="grid gap-2">
                       {data.integrationArchitecture.components.map((component, index) => (
-                        <div key={index} className="bg-background border rounded-lg p-3 space-y-1">
-                          <div className="font-medium text-sm text-primary">{component.name}</div>
-                          <div className="text-xs text-muted-foreground">{component.description}</div>
+                        <div key={index} className="bg-background border rounded-lg p-3 flex items-start gap-3">
+                          <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                            <component.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="font-medium text-sm">{component.name}</div>
+                            <div className="text-xs text-muted-foreground">{component.description}</div>
+                          </div>
                         </div>
                       ))}
                     </div>
