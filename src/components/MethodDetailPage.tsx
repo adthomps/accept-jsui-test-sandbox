@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ShieldCheck, ShieldAlert, Users, CreditCard, ArrowRight, Repeat, Ban, Globe, Code, Shield, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Props for MethodDetailPage component
 interface MethodDetailPageProps {
   method: string;
   onBack: () => void;
