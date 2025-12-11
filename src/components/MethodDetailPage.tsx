@@ -1239,12 +1239,54 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-2">
-            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2 mb-2">
+        <div className="space-y-4">
+          {/* Top row: Back button and Tab Navigation */}
+          <div className="flex items-center justify-between gap-4">
+            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
+            
+            {/* Tab Navigation - Top Right */}
+            <div className="flex bg-muted rounded-lg p-1 shrink-0">
+              <Button
+                variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('overview')}
+                className="rounded-md"
+              >
+                Overview
+              </Button>
+              <Button
+                variant={activeTab === 'api' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('api')}
+                className="rounded-md"
+              >
+                API Examples
+              </Button>
+              <Button
+                variant={activeTab === 'ai' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('ai')}
+                className="rounded-md gap-1"
+              >
+                <Sparkles className="h-3 w-3" />
+                AI Starter
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleTabChange('demo')}
+                className="rounded-md"
+              >
+                Demo
+              </Button>
+            </div>
+          </div>
+
+          {/* Title and Description */}
+          <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-3xl font-bold">
                 {data.name}
@@ -1273,43 +1315,6 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="flex bg-muted rounded-lg p-1 shrink-0">
-            <Button
-              variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('overview')}
-              className="rounded-md"
-            >
-              Overview
-            </Button>
-            <Button
-              variant={activeTab === 'api' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('api')}
-              className="rounded-md"
-            >
-              API Examples
-            </Button>
-            <Button
-              variant={activeTab === 'ai' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('ai')}
-              className="rounded-md gap-1"
-            >
-              <Sparkles className="h-3 w-3" />
-              AI Starter
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleTabChange('demo')}
-              className="rounded-md"
-            >
-              Demo
-            </Button>
           </div>
         </div>
 
