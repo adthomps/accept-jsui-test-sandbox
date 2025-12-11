@@ -19,6 +19,8 @@ type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
 
 interface AcceptCustomerFormProps {
   onBack: () => void;
+  onOverview: () => void;
+  onApi: () => void;
 }
 
 interface CustomerProfile {
@@ -60,7 +62,7 @@ interface FetchedProfile {
   shippingAddresses: ShippingAddress[];
 }
 
-const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
+const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack, onOverview, onApi }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
@@ -433,27 +435,51 @@ const AcceptCustomerForm: React.FC<AcceptCustomerFormProps> = ({ onBack }) => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Accept Customer (CIM)
-            </h1>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2 mb-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Accept Customer (CIM)
+              </h1>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                SAQ-A
+              </Badge>
+            </div>
             <p className="text-muted-foreground">
-              Hybrid integration using CIM API + Accept Customer Hosted Forms for SAQ-A compliance
+              Hybrid integration using CIM API + Accept Customer Hosted Forms
             </p>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Badge variant="secondary" className="gap-2">
-              <Shield className="h-4 w-4" />
-              Tokenized Storage
-            </Badge>
-            <Badge variant="outline" className="gap-2">
-              <User className="h-4 w-4" />
-              Customer Profiles
-            </Badge>
+
+          {/* Tab Navigation */}
+          <div className="flex bg-muted rounded-lg p-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOverview}
+              className="rounded-md"
+            >
+              Overview
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onApi}
+              className="rounded-md"
+            >
+              API Examples
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-md"
+            >
+              Demo
+            </Button>
           </div>
         </div>
 

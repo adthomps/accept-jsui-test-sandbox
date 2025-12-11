@@ -9,6 +9,7 @@ interface MethodDetailPageProps {
   method: string;
   onBack: () => void;
   onDemo: () => void;
+  initialTab?: 'overview' | 'api';
 }
 
 type TabType = 'overview' | 'api' | 'demo';
@@ -585,8 +586,9 @@ const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
   );
 };
 
-const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onDemo }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onDemo, initialTab = 'overview' }) => {
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const { toast } = useToast();
   const data = methodData[method as keyof typeof methodData];
   const apiData = apiExamples[method as keyof typeof apiExamples];
 

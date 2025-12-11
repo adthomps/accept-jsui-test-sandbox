@@ -51,9 +51,11 @@ interface CustomerInfo {
 
 interface AcceptHostedFormProps {
   onBack: () => void;
+  onOverview: () => void;
+  onApi: () => void;
 }
 
-const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
+const AcceptHostedForm = ({ onBack, onOverview, onApi }: AcceptHostedFormProps) => {
   const { toast } = useToast();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "John",
@@ -424,25 +426,52 @@ const AcceptHostedForm = ({ onBack }: AcceptHostedFormProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Accept Hosted Payment
-            </h1>
-            <p className="text-muted-foreground">Secure hosted payment page with customer profile support</p>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 -ml-2 mb-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Accept Hosted Payment
+              </h1>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                SAQ-A
+              </Badge>
+            </div>
+            <p className="text-muted-foreground">
+              Secure hosted payment page with customer profile support
+            </p>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Badge variant="secondary" className="gap-2">
-              <Shield className="h-4 w-4" />
-              PCI SAQ A Compliant
-            </Badge>
-            <Badge variant="outline" className="gap-2">
-              <ExternalLink className="h-4 w-4" />
-              Hosted Payment
-            </Badge>
+
+          {/* Tab Navigation */}
+          <div className="flex bg-muted rounded-lg p-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOverview}
+              className="rounded-md"
+            >
+              Overview
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onApi}
+              className="rounded-md"
+            >
+              API Examples
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-md"
+            >
+              Demo
+            </Button>
           </div>
         </div>
 

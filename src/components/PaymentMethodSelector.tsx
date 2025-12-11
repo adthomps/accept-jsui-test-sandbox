@@ -9,34 +9,42 @@ import AcceptHostedForm from './AcceptHostedForm';
 import AcceptCustomerForm from './AcceptCustomerForm';
 import MethodDetailPage from './MethodDetailPage';
 
+type ViewMode = 'demo' | 'overview' | 'api' | null;
+
 const PaymentMethodSelector = () => {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'demo' | 'overview' | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(null);
+
+  const handleBack = () => { setSelectedMethod(null); setViewMode(null); };
+  const handleOverview = () => setViewMode('overview');
+  const handleApi = () => setViewMode('api');
+  const handleDemo = () => setViewMode('demo');
 
   // Demo views
   if (selectedMethod === 'acceptjs' && viewMode === 'demo') {
-    return <PaymentForm onBack={() => { setSelectedMethod(null); setViewMode(null); }} />;
+    return <PaymentForm onBack={handleBack} onOverview={handleOverview} onApi={handleApi} />;
   }
 
   if (selectedMethod === 'acceptui' && viewMode === 'demo') {
-    return <AcceptUIForm onBack={() => { setSelectedMethod(null); setViewMode(null); }} />;
+    return <AcceptUIForm onBack={handleBack} onOverview={handleOverview} onApi={handleApi} />;
   }
 
   if (selectedMethod === 'accepthosted' && viewMode === 'demo') {
-    return <AcceptHostedForm onBack={() => { setSelectedMethod(null); setViewMode(null); }} />;
+    return <AcceptHostedForm onBack={handleBack} onOverview={handleOverview} onApi={handleApi} />;
   }
 
   if (selectedMethod === 'acceptcustomer' && viewMode === 'demo') {
-    return <AcceptCustomerForm onBack={() => { setSelectedMethod(null); setViewMode(null); }} />;
+    return <AcceptCustomerForm onBack={handleBack} onOverview={handleOverview} onApi={handleApi} />;
   }
 
-  // Overview views
-  if (selectedMethod && viewMode === 'overview') {
+  // Overview/API views
+  if (selectedMethod && (viewMode === 'overview' || viewMode === 'api')) {
     return (
       <MethodDetailPage 
         method={selectedMethod} 
-        onBack={() => { setSelectedMethod(null); setViewMode(null); }}
-        onDemo={() => setViewMode('demo')}
+        onBack={handleBack}
+        onDemo={handleDemo}
+        initialTab={viewMode}
       />
     );
   }
