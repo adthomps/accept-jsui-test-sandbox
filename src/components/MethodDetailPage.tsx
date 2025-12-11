@@ -482,7 +482,11 @@ const methodData = {
       'Authorize.Net hosted UI',
       'Automatic PCI compliance',
     ],
-    warnings: [],
+    warnings: [
+      'Do not try to intercept or access card data from the lightbox iframe',
+      'Do not store or log the payment nonce after it has been used',
+      'Do not use in environments where popups are blocked without fallback',
+    ],
   },
   accepthosted: {
     name: 'Accept Hosted',
@@ -540,7 +544,12 @@ const methodData = {
       'Webhook transaction verification',
       'Customer profile encryption',
     ],
-    warnings: [],
+    warnings: [
+      'Do not include query parameters in cancelUrl (causes form to fail)',
+      'Do not embed without iFrameCommunicator for lightbox/iframe modes',
+      'Do not skip webhook verification for transaction confirmation',
+      'Do not expose hosted payment tokens in client-side logs',
+    ],
   },
   acceptcustomer: {
     name: 'Accept Customer (CIM)',
@@ -596,7 +605,12 @@ const methodData = {
       'Secure recurring billing',
       'Supports PCI Level 1 environment',
     ],
-    warnings: [],
+    warnings: [
+      'Do not store raw card data - always use hosted forms for collection',
+      'Do not expose customerProfileId or paymentProfileId in client-side code',
+      'Do not charge profiles without proper user authorization',
+      'Do not use editPayment/editShipping without the specific profile ID',
+    ],
   },
 };
 
