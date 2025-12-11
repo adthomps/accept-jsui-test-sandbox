@@ -34,6 +34,7 @@ interface CustomerInfo {
   description: string;
 }
 
+// Props for AcceptUIForm component
 interface AcceptUIFormProps {
   onBack: () => void;
   onOverview: () => void;

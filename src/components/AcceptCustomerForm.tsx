@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 type DisplayMode = 'redirect' | 'lightbox' | 'iframe';
 
+// Props for AcceptCustomerForm component
 interface AcceptCustomerFormProps {
   onBack: () => void;
   onOverview: () => void;

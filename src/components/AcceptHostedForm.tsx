@@ -49,6 +49,7 @@ interface CustomerInfo {
   amount: string;
 }
 
+// Props for AcceptHostedForm component
 interface AcceptHostedFormProps {
   onBack: () => void;
   onOverview: () => void;

@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, CheckCircle, ShieldCheck, ShieldAlert, ArrowLeft, Play, BookOpen, Users, CreditCard, ArrowRight, Repeat, Ban } from 'lucide-react';
-import PaymentForm from './PaymentForm';
-import AcceptUIForm from './AcceptUIForm';
-import AcceptHostedForm from './AcceptHostedForm';
-import AcceptCustomerForm from './AcceptCustomerForm';
-import MethodDetailPage from './MethodDetailPage';
+import { Shield, CheckCircle, ShieldCheck, ShieldAlert, Play, BookOpen } from 'lucide-react';
+import PaymentForm from '@/components/PaymentForm';
+import AcceptUIForm from '@/components/AcceptUIForm';
+import AcceptHostedForm from '@/components/AcceptHostedForm';
+import AcceptCustomerForm from '@/components/AcceptCustomerForm';
+import MethodDetailPage from '@/components/MethodDetailPage';
 
 type ViewMode = 'demo' | 'overview' | 'api' | null;
 

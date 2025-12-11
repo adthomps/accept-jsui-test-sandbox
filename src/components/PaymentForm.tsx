@@ -39,6 +39,7 @@ interface PaymentToken {
   };
 }
 
+// Props for PaymentForm component
 interface PaymentFormProps {
   onBack: () => void;
   onOverview: () => void;
