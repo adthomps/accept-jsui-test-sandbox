@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShieldCheck, ShieldAlert, Users, CreditCard, ArrowRight, Repeat, Ban, Globe, Code, Shield, Copy, Check, Monitor, Lock, Server, Webhook, MousePointer, LayoutGrid, Vault, Database } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ShieldAlert, Users, CreditCard, ArrowRight, Repeat, Ban, Globe, Code, Shield, Copy, Check, Monitor, Lock, Server, Webhook, MousePointer, LayoutGrid, Vault, Database, Sparkles, FileText, Clipboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // Props for MethodDetailPage component
@@ -13,7 +13,7 @@ interface MethodDetailPageProps {
   initialTab?: 'overview' | 'api';
 }
 
-type TabType = 'overview' | 'api' | 'demo';
+type TabType = 'overview' | 'api' | 'ai' | 'demo';
 
 interface ApiExample {
   title: string;
@@ -614,6 +614,427 @@ const methodData = {
   },
 };
 
+// AI Starter content for each method
+const aiStarterContent: Record<string, { prompt: string; specs: string }> = {
+  acceptjs: {
+    prompt: `I need to implement Authorize.Net Accept.js payment integration for a web application.
+
+## Requirements
+- SAQ A-EP PCI compliance (card data enters page but is tokenized client-side)
+- React/TypeScript frontend
+- Supabase Edge Functions for backend processing
+- Test/sandbox environment first, then production
+
+## What I Need
+1. Load Accept.js library dynamically
+2. Create a payment form that collects card data
+3. Tokenize card data using Accept.dispatchData()
+4. Send payment nonce to backend for processing
+5. Handle success/error responses
+
+## Constraints
+- Never store raw card data
+- Use payment nonce only once (single-use token)
+- Handle network errors gracefully
+- Support for billing address collection (optional)`,
+    specs: `# Accept.js Technical Specification
+
+## Environment URLs
+- Sandbox: https://jstest.authorize.net/v1/Accept.js
+- Production: https://js.authorize.net/v1/Accept.js
+
+## Required Credentials
+- API Login ID (public, used client-side)
+- Public Client Key (public, used client-side)  
+- Transaction Key (secret, backend only)
+
+## Client-Side Data Structure
+\`\`\`typescript
+interface SecureData {
+  authData: {
+    clientKey: string;      // Public Client Key
+    apiLoginID: string;     // API Login ID
+  };
+  cardData: {
+    cardNumber: string;     // 13-19 digits
+    month: string;          // MM format
+    year: string;           // YYYY format
+    cardCode: string;       // 3-4 digit CVV
+  };
+}
+
+interface AcceptResponse {
+  messages: {
+    resultCode: 'Ok' | 'Error';
+    message: Array<{ code: string; text: string }>;
+  };
+  opaqueData?: {
+    dataDescriptor: 'COMMON.ACCEPT.INAPP.PAYMENT';
+    dataValue: string;  // Payment nonce (single-use)
+  };
+}
+\`\`\`
+
+## Server-Side Transaction Request
+\`\`\`json
+{
+  "createTransactionRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "transactionRequest": {
+      "transactionType": "authCaptureTransaction",
+      "amount": "29.99",
+      "payment": {
+        "opaqueData": {
+          "dataDescriptor": "COMMON.ACCEPT.INAPP.PAYMENT",
+          "dataValue": "PAYMENT_NONCE"
+        }
+      }
+    }
+  }
+}
+\`\`\`
+
+## API Endpoints
+- Sandbox: https://apitest.authorize.net/xml/v1/request.api
+- Production: https://api.authorize.net/xml/v1/request.api
+
+## Test Card Numbers
+- Visa: 4111111111111111
+- Mastercard: 5424000000000015
+- Amex: 370000000000002
+- Discover: 6011000000000012
+
+## Error Codes
+- E00001: An error occurred during processing
+- E00003: The 'AnetApi/xml/v1/schema/AnetApiSchema.xsd' is invalid
+- E00007: User authentication failed
+- E00039: A duplicate transaction has been submitted`
+  },
+  acceptui: {
+    prompt: `I need to implement Authorize.Net Accept UI (lightbox) payment integration.
+
+## Requirements
+- SAQ-A PCI compliance (no card data on my page)
+- React/TypeScript frontend
+- Supabase Edge Functions for backend processing
+- Hosted lightbox modal for card collection
+- Test/sandbox environment first
+
+## What I Need
+1. Add Accept UI button with data attributes
+2. Load AcceptUI.js library
+3. Handle payment nonce in callback function
+4. Process payment on backend
+5. Display success/error to user
+
+## Constraints
+- Card data never touches my page
+- Handle popup blockers gracefully
+- Support billing address display (optional)
+- Global responseHandler function required`,
+    specs: `# Accept UI Technical Specification
+
+## Environment URLs
+- Sandbox: https://jstest.authorize.net/v3/AcceptUI.js
+- Production: https://js.authorize.net/v3/AcceptUI.js
+
+## Required Credentials
+- API Login ID (public, data attribute)
+- Public Client Key (public, data attribute)
+- Transaction Key (secret, backend only)
+
+## Button Data Attributes
+\`\`\`html
+<button type="button"
+  class="AcceptUI"
+  data-billingAddressOptions='{"show":true,"required":false}'
+  data-apiLoginID="YOUR_API_LOGIN_ID"
+  data-clientKey="YOUR_PUBLIC_CLIENT_KEY"
+  data-acceptUIFormBtnTxt="Pay Now"
+  data-acceptUIFormHeaderTxt="Card Information"
+  data-responseHandler="responseHandler">
+  Pay Now
+</button>
+\`\`\`
+
+## Response Handler Interface
+\`\`\`typescript
+interface AcceptUIResponse {
+  messages: {
+    resultCode: 'Ok' | 'Error';
+    message: Array<{ code: string; text: string }>;
+  };
+  opaqueData?: {
+    dataDescriptor: 'COMMON.ACCEPT.INAPP.PAYMENT';
+    dataValue: string;
+  };
+}
+
+// Must be global function
+window.responseHandler = (response: AcceptUIResponse) => {
+  if (response.messages.resultCode === 'Ok') {
+    // Send response.opaqueData to server
+  }
+};
+\`\`\`
+
+## Configuration Options
+| Attribute | Description |
+|-----------|-------------|
+| data-billingAddressOptions | Show/require billing address |
+| data-acceptUIFormBtnTxt | Submit button text |
+| data-acceptUIFormHeaderTxt | Modal header text |
+| data-paymentOptions | Card types to accept |
+
+## Server-Side Processing
+Same as Accept.js - use opaqueData in createTransactionRequest.
+
+## Important Notes
+- responseHandler MUST be a global function on window
+- Lightbox opens in iframe, no popup blocker issues
+- Script automatically finds buttons with .AcceptUI class
+- Token is single-use, process immediately`
+  },
+  accepthosted: {
+    prompt: `I need to implement Authorize.Net Accept Hosted payment page integration.
+
+## Requirements
+- SAQ-A PCI compliance (fully hosted payment form)
+- React/TypeScript frontend
+- Supabase Edge Functions for backend processing
+- Support redirect, lightbox, and iframe display modes
+- Customer profile creation optional
+- Return URL handling for payment completion
+
+## What I Need
+1. Request hosted payment page token from backend
+2. Redirect user or embed iframe with token
+3. Handle return URL with transaction result
+4. Optional: Create customer profile for saved cards
+5. Process webhooks for transaction confirmation
+
+## Constraints
+- cancelUrl must NOT have query parameters
+- Token expires after 15 minutes
+- iFrameCommunicator.html required for lightbox/iframe
+- Customer and billTo elements omitted for returning customers`,
+    specs: `# Accept Hosted Technical Specification
+
+## API Endpoint
+- Sandbox: https://apitest.authorize.net/xml/v1/request.api
+- Production: https://api.authorize.net/xml/v1/request.api
+
+## Hosted Page URLs
+- Sandbox: https://test.authorize.net/payment/payment
+- Production: https://accept.authorize.net/payment/payment
+
+## Token Request (getHostedPaymentPageRequest)
+\`\`\`json
+{
+  "getHostedPaymentPageRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "transactionRequest": {
+      "transactionType": "authCaptureTransaction",
+      "amount": "29.99",
+      "customer": { "email": "customer@example.com" },
+      "billTo": {
+        "firstName": "John",
+        "lastName": "Doe"
+      }
+    },
+    "hostedPaymentSettings": {
+      "setting": [
+        {
+          "settingName": "hostedPaymentReturnOptions",
+          "settingValue": "{\\"showReceipt\\": false, \\"url\\": \\"https://yoursite.com/return?refId=123\\", \\"cancelUrl\\": \\"https://yoursite.com/cancel\\"}"
+        },
+        {
+          "settingName": "hostedPaymentButtonOptions",
+          "settingValue": "{\\"text\\": \\"Pay Now\\"}"
+        },
+        {
+          "settingName": "hostedPaymentCustomerOptions",
+          "settingValue": "{\\"showEmail\\": true, \\"addPaymentProfile\\": true}"
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+## Display Modes
+| Mode | Implementation |
+|------|----------------|
+| Redirect | window.location = gatewayUrl + '?token=' + token |
+| Lightbox | AuthorizeNetPopup.openAddPaymentPopup() |
+| iFrame | <iframe src={gatewayUrl + '?token=' + token} /> |
+
+## Lightbox/iFrame Requirements
+- hostedPaymentIFrameCommunicatorUrl setting required
+- iFrameCommunicator.html handles postMessage events
+- Events: cancel, transactResponse, resizeWindow
+
+## Return URL Parameters
+- response_code: 1=Approved, 2=Declined, 3=Error
+- transaction_id: Authorize.Net transaction ID
+- customer_profile_id: If profile created
+- customer_payment_profile_id: If payment saved
+
+## CRITICAL: URL Requirements
+- cancelUrl: NO query parameters allowed
+- url (success): Query parameters OK (use for refId tracking)
+
+## Returning Customer Request
+Omit customer and billTo, include profile:
+\`\`\`json
+{
+  "transactionRequest": {
+    "transactionType": "authCaptureTransaction",
+    "amount": "29.99",
+    "profile": {
+      "customerProfileId": "123456789"
+    }
+  }
+}
+\`\`\``
+  },
+  acceptcustomer: {
+    prompt: `I need to implement Authorize.Net Accept Customer (CIM) for managing saved payment profiles.
+
+## Requirements
+- SAQ-A PCI compliance for hosted form operations
+- React/TypeScript frontend
+- Supabase Edge Functions for backend processing
+- Support profile management: create, view, edit, delete
+- Charge saved payment methods
+- Multiple display modes (redirect, lightbox, iframe)
+
+## What I Need
+1. Create customer profiles via API
+2. Get hosted profile page token for managing payment methods
+3. Display hosted forms for adding/editing payment profiles
+4. Charge existing payment profiles
+5. Handle webhooks for profile updates
+
+## Constraints  
+- Direct API for create/get/charge operations
+- Hosted forms for add/edit payment methods (SAQ-A)
+- editPayment requires paymentProfileId, not customerProfileId
+- editShipping requires shippingAddressId
+- Profile IDs should not be exposed client-side`,
+    specs: `# Accept Customer (CIM) Technical Specification
+
+## API Endpoint
+- Sandbox: https://apitest.authorize.net/xml/v1/request.api
+- Production: https://api.authorize.net/xml/v1/request.api
+
+## Hosted Profile Page URL
+- Sandbox: https://test.authorize.net/customer/
+- Production: https://accept.authorize.net/customer/
+
+## Create Customer Profile (Direct API)
+\`\`\`json
+{
+  "createCustomerProfileRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "profile": {
+      "email": "customer@example.com",
+      "description": "Customer profile"
+    }
+  }
+}
+\`\`\`
+
+## Get Hosted Profile Token
+\`\`\`json
+{
+  "getHostedProfilePageRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "customerProfileId": "123456789",
+    "hostedProfileSettings": {
+      "setting": [
+        {
+          "settingName": "hostedProfilePageBorderVisible",
+          "settingValue": "false"
+        },
+        {
+          "settingName": "hostedProfileIFrameCommunicatorUrl",
+          "settingValue": "https://yoursite.com/iFrameCommunicator.html"
+        },
+        {
+          "settingName": "hostedProfileManageOptions",
+          "settingValue": "showPayment,showShipping"
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+## Page Types
+| Type | Required ID | Description |
+|------|-------------|-------------|
+| manage | customerProfileId | View/manage all profiles |
+| addPayment | customerProfileId | Add new payment method |
+| addShipping | customerProfileId | Add new shipping address |
+| editPayment | paymentProfileId | Edit specific payment |
+| editShipping | shippingAddressId | Edit specific address |
+
+## Charge Customer Profile
+\`\`\`json
+{
+  "createTransactionRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "transactionRequest": {
+      "transactionType": "authCaptureTransaction",
+      "amount": "29.99",
+      "profile": {
+        "customerProfileId": "123456789",
+        "paymentProfile": {
+          "paymentProfileId": "987654321"
+        }
+      }
+    }
+  }
+}
+\`\`\`
+
+## Get Customer Profile (for listing payment methods)
+\`\`\`json
+{
+  "getCustomerProfileRequest": {
+    "merchantAuthentication": {
+      "name": "API_LOGIN_ID",
+      "transactionKey": "TRANSACTION_KEY"
+    },
+    "customerProfileId": "123456789",
+    "includeIssuerInfo": "true"
+  }
+}
+\`\`\`
+
+## iFrameCommunicator Events
+- action=successfulSave: Profile updated
+- action=cancel: User cancelled
+- action=resizeWindow: Adjust iframe height`
+  }
+};
+
 const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
@@ -640,6 +1061,159 @@ const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
         <code>{code}</code>
       </pre>
     </div>
+  );
+};
+
+// AI Starter Content Component
+const AIStarterContent: React.FC<{ method: string }> = ({ method }) => {
+  const { toast } = useToast();
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedSpecs, setCopiedSpecs] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+  
+  const aiData = aiStarterContent[method as keyof typeof aiStarterContent];
+  
+  if (!aiData) return null;
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(aiData.prompt);
+    setCopiedPrompt(true);
+    toast({ title: 'Prompt copied to clipboard' });
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
+  const handleCopySpecs = () => {
+    navigator.clipboard.writeText(aiData.specs);
+    setCopiedSpecs(true);
+    toast({ title: 'Specs copied to clipboard' });
+    setTimeout(() => setCopiedSpecs(false), 2000);
+  };
+
+  const handleCopyAll = () => {
+    const combined = `${aiData.prompt}\n\n---\n\n${aiData.specs}`;
+    navigator.clipboard.writeText(combined);
+    setCopiedAll(true);
+    toast({ title: 'All content copied to clipboard' });
+    setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  return (
+    <>
+      {/* Intro Banner */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">AI-Ready Implementation Guide</p>
+              <p className="text-sm text-muted-foreground">
+                Copy the prompt template and technical specs below to use with your favorite AI assistant (ChatGPT, Claude, Copilot, etc.) to jumpstart your integration.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Copy All Button */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleCopyAll}
+          className="gap-2"
+        >
+          {copiedAll ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+          {copiedAll ? 'Copied!' : 'Copy All to Clipboard'}
+        </Button>
+      </div>
+
+      {/* Prompt Template */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Prompt Template
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Describe your requirements to an AI assistant
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCopyPrompt}
+              className="gap-1 shrink-0"
+            >
+              {copiedPrompt ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copiedPrompt ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm whitespace-pre-wrap">
+            <code>{aiData.prompt}</code>
+          </pre>
+        </CardContent>
+      </Card>
+
+      {/* Technical Specifications */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Code className="h-4 w-4 text-primary" />
+                Technical Specifications
+              </CardTitle>
+              <CardDescription className="mt-1">
+                API details, types, and request/response structures
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCopySpecs}
+              className="gap-1 shrink-0"
+            >
+              {copiedSpecs ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copiedSpecs ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm whitespace-pre-wrap">
+            <code>{aiData.specs}</code>
+          </pre>
+        </CardContent>
+      </Card>
+
+      {/* Tips Card */}
+      <Card className="bg-muted/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Tips for Best Results</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Modify the prompt to match your specific tech stack (e.g., replace "Supabase" with your backend)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Add any additional requirements or constraints specific to your project</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Use "Copy All" to give the AI both context and specs in one go</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Always test in sandbox environment before switching to production URLs</span>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
@@ -687,7 +1261,9 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
             <p className="text-muted-foreground max-w-2xl">
               {activeTab === 'api' 
                 ? `Practical request/response examples for ${data.name} integration.`
-                : data.description
+                : activeTab === 'ai'
+                  ? `AI-ready prompts and specs to jumpstart your ${data.name} implementation.`
+                  : data.description
               }
             </p>
             {activeTab === 'overview' && (
@@ -718,6 +1294,15 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               API Examples
             </Button>
             <Button
+              variant={activeTab === 'ai' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => handleTabChange('ai')}
+              className="rounded-md gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              AI Starter
+            </Button>
+            <Button
               variant="ghost"
               size="sm"
               onClick={() => handleTabChange('demo')}
@@ -728,7 +1313,7 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
           </div>
         </div>
 
-        {activeTab === 'overview' ? (
+        {activeTab === 'overview' && (
           <>
             {/* How It Works Banner */}
             <Card className="bg-primary/5 border-primary/20">
@@ -892,8 +1477,9 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               </Card>
             )}
           </>
-        ) : (
-          /* API Examples Tab */
+        )}
+
+        {activeTab === 'api' && (
           <>
             {/* Flow Banner */}
             <Card className="bg-primary/5 border-primary/20">
@@ -954,6 +1540,10 @@ const MethodDetailPage: React.FC<MethodDetailPageProps> = ({ method, onBack, onD
               ))}
             </div>
           </>
+        )}
+
+        {activeTab === 'ai' && (
+          <AIStarterContent method={method} />
         )}
       </div>
     </div>
